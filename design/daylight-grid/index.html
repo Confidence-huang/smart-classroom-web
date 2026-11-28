@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EcoVision · 少用一度电，不少一分舒适</title>
+<meta name="description" content="面向教室与办公空间的低碳运行系统：用实时传感与门限策略，替代凭习惯开灯开风。">
+<link rel="stylesheet" href="tokens.css">
+<script>document.documentElement.className += " js gated";</script>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, p, ul, figure { margin: 0; }
+ul { padding: 0; list-style: none; }
+a { color: inherit; text-decoration: none; }
+button, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 4px; }
+
+.wrap { max-width: var(--wrap); margin-inline: auto; padding-inline: var(--gutter); }
+.skip {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 0 0 var(--r-sm) 0;
+}
+.skip:focus { left: 0; }
+html.gated .site-head, html.gated main, html.gated .foot { visibility: hidden; }
+html.gated, html.gated body, html.lock, html.lock body { overflow: hidden; }
+
+.gate { display: none; }
+html.js .gate {
+  position: fixed; inset: 0; z-index: 90; display: grid; place-items: center;
+  background:
+    radial-gradient(620px 380px at 78% 4%, rgba(16, 185, 129, 0.18), transparent 68%),
+    radial-gradient(560px 340px at 6% 88%, rgba(56, 132, 200, 0.12), transparent 72%),
+    var(--grad-hero);
+  transition: transform 760ms cubic-bezier(0.76, 0, 0.24, 1);
+}
+.gate-inner {
+  position: relative; z-index: 2; text-align: center;
+  padding: 0 var(--gutter); max-width: 560px;
+  transition: opacity 240ms var(--ease), transform 240ms var(--ease);
+}
+.gate-mark {
+  width: 34px; height: 34px; border-radius: 9px; background: var(--brand);
+  margin: 0 auto 22px; position: relative; box-shadow: 0 10px 24px -14px rgba(14, 159, 110, 0.9);
+}
+.gate-mark::after { content: ""; position: absolute; inset: 10px; border-radius: 3px; background: var(--brand-wash); }
+.gate h1 {
+  font-size: clamp(1.75rem, 4.2vw, 2.75rem); font-weight: 500;
+  line-height: 1.18; letter-spacing: -0.025em; margin-top: 12px;
+}
+.gate h1 em { font-style: normal; color: var(--brand-ink); }
+.gate-sub { font-size: var(--fs-sm); color: var(--ink-2); margin-top: 14px; }
+.gate-btn {
+  margin-top: 30px; display: inline-flex; align-items: center; gap: 10px;
+  padding: 14px 26px; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--brand); color: #fff; font-size: var(--fs-body); font-weight: 500;
+  box-shadow: 0 14px 30px -16px rgba(14, 159, 110, 0.95);
+  transition: background-color var(--dur) var(--ease), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.gate-btn:hover { background: var(--brand-ink); transform: translateY(-1px); box-shadow: 0 18px 34px -16px rgba(14, 159, 110, 0.95); }
+.gate-btn:active { transform: translateY(0); }
+.gate-btn svg { width: 15px; height: 15px; }
+.gate-note { font-size: var(--fs-xs); color: var(--ink-3); margin-top: 14px; }
+.gate.is-leaving .gate-inner { opacity: 0; transform: translateY(-14px); }
+.gate.is-leaving { transform: translateY(-100%); }
+
+html.ready .hero-grid > * { animation: rise 560ms var(--ease) both; }
+html.ready .hero-grid > *:nth-child(2) { animation-delay: 90ms; }
+html.ready .kpi-card { animation: rise 460ms var(--ease) both; animation-delay: calc(var(--d, 0ms) + 80ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gate { transition: opacity 160ms linear; }
+  .gate.is-leaving { transform: none; opacity: 0; }
+  html.ready .hero-grid > *, html.ready .kpi-card { animation: none; }
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+.eyebrow {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brand-ink);
+  font-weight: 500;
+}
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* ---------- header ---------- */
+.site-head {
+  position: sticky; top: 0; z-index: 40;
+  background: rgba(248, 250, 252, 0.92);
+  border-bottom: 1px solid var(--line-soft);
+}
+.head-row { display: flex; align-items: center; gap: 24px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 9px; font-weight: 500; letter-spacing: -0.01em; }
+.brand-mark { width: 20px; height: 20px; border-radius: 5px; background: var(--brand); position: relative; }
+.brand-mark::after {
+  content: ""; position: absolute; inset: 6px 6px 6px 6px;
+  border-radius: 2px; background: var(--brand-wash);
+}
+.nav { display: flex; gap: 26px; margin-left: auto; font-size: var(--fs-sm); color: var(--ink-2); }
+.nav a { padding: 4px 0; border-bottom: 1px solid transparent; transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease); }
+.nav a:hover { color: var(--ink); border-color: var(--ink-3); }
+.head-cta {
+  font-size: var(--fs-sm); padding: 8px 14px; border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  box-shadow: var(--sh-1); transition: border-color var(--dur) var(--ease);
+}
+.head-cta:hover { border-color: var(--ink-3); }
+
+/* ---------- hero ---------- */
+.hero {
+  position: relative; overflow: hidden;
+  padding-block: clamp(44px, 6vw, 80px) clamp(84px, 10vw, 132px);
+  background:
+    radial-gradient(640px 360px at 86% 0%, rgba(16, 185, 129, 0.18), transparent 68%),
+    radial-gradient(620px 340px at 2% 30%, rgba(56, 132, 200, 0.13), transparent 72%),
+    var(--grad-hero);
+}
+.hero::before {
+  content: ""; position: absolute; inset: 0; z-index: 0;
+  background-image:
+    repeating-linear-gradient(to right, rgba(100, 116, 139, 0.10) 0 1px, transparent 1px 72px),
+    repeating-linear-gradient(to bottom, rgba(100, 116, 139, 0.10) 0 1px, transparent 1px 72px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.30) 58%, transparent 94%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.30) 58%, transparent 94%);
+  pointer-events: none;
+}
+.hero::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 158px; z-index: 1;
+  background: linear-gradient(to bottom, rgba(248, 250, 252, 0), var(--canvas) 92%);
+  pointer-events: none;
+}
+.ribbon {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none;
+}
+.hero-grid {
+  position: relative; z-index: 2;
+  display: grid; grid-template-columns: 7fr 5fr;
+  gap: clamp(28px, 4vw, 56px); align-items: center;
+}
+.hero h1 {
+  font-size: var(--fs-h1); font-weight: 500; line-height: 1.06;
+  letter-spacing: -0.025em; margin-top: 14px;
+}
+.hero h1 em { font-style: normal; color: var(--brand-ink); }
+.hero-lead {
+  margin-top: 18px; max-width: 34ch;
+  font-size: var(--fs-lead); line-height: 1.72; color: var(--ink-2);
+}
+.hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 11px 18px; border-radius: 8px; font-size: var(--fs-sm); font-weight: 500;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary:hover { background: var(--brand-ink); }
+.btn-ghost { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); }
+.btn-ghost:hover { border-color: var(--ink-3); }
+.hero-note { margin-top: 16px; font-size: var(--fs-xs); color: var(--ink-3); }
+
+/* live card */
+.live {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: 18px 20px 16px; box-shadow: var(--sh-2);
+}
+.live-head { display: flex; align-items: center; justify-content: space-between; }
+.live-live { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--ink-3); }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.live-k { font-size: var(--fs-xs); color: var(--ink-3); }
+.live-v {
+  display: flex; align-items: baseline; gap: 8px; margin-top: 4px;
+  font-size: 2rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1.2;
+}
+.live-v small { font-size: var(--fs-sm); font-weight: 400; color: var(--ink-2); }
+.delta { font-size: var(--fs-xs); color: var(--brand-ink); background: var(--brand-wash); padding: 2px 7px; border-radius: 999px; }
+.spark { display: block; width: 100%; height: auto; margin-top: 10px; }
+.axis { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--ink-3); margin-top: 2px; }
+.live-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+  font-size: var(--fs-xs); color: var(--ink-3);
+}
+.live-foot b { font-weight: 500; color: var(--ink-2); }
+
+/* ---------- kpi strip ---------- */
+.kpi { position: relative; z-index: 2; margin-top: -56px; }
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--r-lg); box-shadow: var(--sh-1); overflow: hidden;
+}
+.kpi-card { padding: 18px 20px; border-right: 1px solid var(--line-soft); transition: background-color var(--dur) var(--ease); }
+.kpi-card:last-child { border-right: 0; }
+.kpi-card:hover { background: #fbfdfe; }
+.kpi-k { font-size: var(--fs-xs); color: var(--ink-3); }
+.kpi-v { font-size: 1.5rem; font-weight: 500; letter-spacing: -0.01em; margin-top: 2px; }
+.kpi-v span { font-size: var(--fs-sm); font-weight: 400; color: var(--ink-2); margin-left: 3px; }
+.kpi-x { font-size: var(--fs-xs); color: var(--ink-3); margin-top: 4px; }
+
+/* ---------- sections ---------- */
+.section { padding-block: var(--section); }
+.sec-head { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: end; margin-bottom: 44px; }
+.sec-head h2 { font-size: var(--fs-h2); font-weight: 500; letter-spacing: -0.02em; line-height: 1.25; margin-top: 10px; }
+.sec-head p { font-size: var(--fs-sm); color: var(--ink-2); max-width: 38ch; }
+
+.tech { border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, 1fr); }
+.tech-item { padding: 26px 28px 8px 0; border-right: 1px solid var(--line); }
+.tech-item:last-child { border-right: 0; padding-right: 0; }
+.tech-item + .tech-item { padding-left: 28px; }
+.tech-idx { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--brand-ink); letter-spacing: 0.08em; }
+.tech h3 { font-size: var(--fs-h3); font-weight: 500; margin-top: 8px; }
+.tech p { font-size: var(--fs-sm); color: var(--ink-2); margin-top: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+.chip {
+  font-size: var(--fs-xs); color: var(--ink-2); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font-family: var(--font-mono);
+}
+
+.cases { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.case {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 0 0 18px; overflow: hidden;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.case:hover { border-color: var(--ink-3); transform: translateY(-2px); }
+.case-art { background: var(--surface-2); border-bottom: 1px solid var(--line-soft); display: block; width: 100%; height: auto; }
+.case-body { padding: 16px 18px 0; }
+.case h3 { font-size: var(--fs-h3); font-weight: 500; }
+.case p { font-size: var(--fs-sm); color: var(--ink-2); margin-top: 6px; }
+.case-metric { display: flex; gap: 16px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.case-metric div { font-size: var(--fs-xs); color: var(--ink-3); }
+.case-metric b { display: block; font-size: var(--fs-lead); font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ---------- cta ---------- */
+.cta { background: var(--dark); color: #e8eef7; }
+.cta-grid { display: grid; grid-template-columns: 6fr 5fr; gap: clamp(28px, 5vw, 64px); align-items: center; }
+.cta h2 { font-size: var(--fs-h2); font-weight: 500; line-height: 1.28; letter-spacing: -0.02em; }
+.cta p { font-size: var(--fs-sm); color: #9fb0c6; margin-top: 12px; max-width: 40ch; }
+.cta-form { display: flex; gap: 8px; flex-wrap: wrap; }
+.cta-form input {
+  flex: 1 1 220px; min-width: 0; padding: 12px 14px; border-radius: 8px;
+  border: 1px solid #26364c; background: var(--dark-2); color: #e8eef7;
+  font-size: 16px;
+}
+.cta-form input::placeholder { color: #8ea3bc; }
+.cta-form input:focus { outline: 2px solid var(--brand); outline-offset: 2px; }
+.cta-form button {
+  padding: 12px 20px; border-radius: 8px; border: 0; background: var(--brand);
+  color: #fff; font-weight: 500; cursor: pointer; transition: background-color var(--dur) var(--ease);
+}
+.cta-form button:hover { background: #12b47d; }
+.cta-msg { font-size: var(--fs-xs); color: var(--brand-soft); margin-top: 10px; min-height: 18px; }
+.cta-fine { font-size: var(--fs-xs); color: #7286a0; margin-top: 6px; }
+
+/* ---------- footer ---------- */
+.foot { background: var(--canvas); padding-block: 32px; border-top: 1px solid var(--line); }
+.foot-row { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; font-size: var(--fs-xs); color: var(--ink-3); }
+.foot-row a { color: var(--ink-2); }
+.foot-row a:hover { color: var(--brand-ink); }
+
+/* ---------- motion ---------- */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+.enter { animation: rise 260ms var(--ease) both; animation-delay: var(--d, 0ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .enter { animation: none; }
+  .kpi-card:hover, .case:hover { transform: none; }
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 1024px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .hero-lead { max-width: 46ch; }
+  .kpi { margin-top: 28px; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-card:nth-child(2) { border-right: 0; }
+  .kpi-card:nth-child(-n+2) { border-bottom: 1px solid var(--line-soft); }
+  .sec-head { grid-template-columns: 1fr; align-items: start; gap: 12px; }
+  .tech { grid-template-columns: 1fr; }
+  .tech-item { border-right: 0; border-bottom: 1px solid var(--line); padding: 22px 0; }
+  .tech-item + .tech-item { padding-left: 0; }
+  .tech-item:last-child { border-bottom: 0; }
+  .cases { grid-template-columns: 1fr 1fr; }
+  .cta-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 680px) {
+  .nav { display: none; }
+  .head-row { height: 58px; }
+  .brand { font-size: var(--fs-sm); }
+  .head-cta { margin-left: auto; }
+  .hero { padding-top: 32px; }
+  .ribbon { opacity: 0.72; }
+  .hero h1 { letter-spacing: -0.02em; }
+  .live { padding: 16px; }
+  .live-v { font-size: 1.75rem; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .kpi-card { padding: 14px 15px; }
+  .kpi-v { font-size: 1.25rem; }
+  .cases { grid-template-columns: 1fr; }
+  .btn { width: 100%; justify-content: center; }
+  .foot-row { flex-direction: column; gap: 8px; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">跳到主要内容</a>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+  <svg class="ribbon" viewBox="0 0 1440 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="g-band" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0" stop-color="#7fcf9f"/><stop offset="0.52" stop-color="#7cc4d6"/><stop offset="1" stop-color="#8fb4e6"/>
+      </linearGradient>
+      <linearGradient id="g-line" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0" stop-color="#3fae83"/><stop offset="1" stop-color="#5b8fd4"/>
+      </linearGradient>
+    </defs>
+    <path d="M-120,760 C120,700 260,600 500,588 C760,576 860,660 1080,652 C1260,646 1340,560 1500,520 L1500,584 C1340,626 1260,708 1080,714 C860,722 760,638 500,650 C260,662 120,762 -120,822 Z" fill="url(#g-band)" opacity="0.34"/>
+    <g fill="none" stroke="url(#g-line)" stroke-linecap="round">
+      <path d="M470,54 C700,6 850,144 1080,114 C1260,90 1370,36 1500,18" stroke-width="1.2" opacity="0.5"/>
+      <path d="M470,106 C700,58 850,196 1080,166 C1260,142 1370,88 1500,70" stroke-width="1" opacity="0.3"/>
+    </g>
+  </svg>
+  <div class="gate-inner">
+    <div class="gate-mark" aria-hidden="true"></div>
+    <div class="eyebrow">EcoVision</div>
+    <h1 id="gate-title">让这间屋子<br>开始<em>省电</em></h1>
+    <p class="gate-sub">接入 12 个在运节点，读取人流、照度与空气质量。</p>
+    <button class="gate-btn" id="gate-btn" type="button">
+      开启节能
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5"/></svg>
+    </button>
+    <p class="gate-note">点击后加载实时数据，约 1 秒</p>
+  </div>
+</div>
+
+<header class="site-head">
+  <div class="wrap head-row">
+    <a class="brand" href="#top" aria-label="EcoVision 首页">
+      <span class="brand-mark" aria-hidden="true"></span>
+      EcoVision
+    </a>
+    <nav class="nav" aria-label="主导航">
+      <a href="#data">实时数据</a>
+      <a href="#tech">绿色技术</a>
+      <a href="#cases">应用场景</a>
+      <a href="#method">方法学</a>
+    </nav>
+    <a class="head-cta" href="#contact">预约试点</a>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <section class="hero" id="top">
+    <svg class="ribbon" viewBox="0 0 1440 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="rb-band" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stop-color="#7fcf9f"/><stop offset="0.52" stop-color="#7cc4d6"/><stop offset="1" stop-color="#8fb4e6"/>
+        </linearGradient>
+        <linearGradient id="rb-line" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stop-color="#3fae83"/><stop offset="0.55" stop-color="#3fa0c0"/><stop offset="1" stop-color="#5b8fd4"/>
+        </linearGradient>
+      </defs>
+      <path d="M-120,760 C120,700 260,600 500,588 C760,576 860,660 1080,652 C1260,646 1340,560 1500,520 L1500,584 C1340,626 1260,708 1080,714 C860,722 760,638 500,650 C260,662 120,762 -120,822 Z" fill="url(#rb-band)" opacity="0.34"/>
+      <path d="M-120,700 C140,650 300,560 540,548 C800,536 900,616 1120,608 C1300,602 1380,520 1540,486 L1540,516 C1380,552 1300,634 1120,640 C900,648 800,568 540,580 C300,592 140,682 -120,732 Z" fill="url(#rb-band)" opacity="0.16"/>
+      <g fill="none" stroke="url(#rb-line)" stroke-linecap="round">
+        <path d="M470,54 C700,6 850,144 1080,114 C1260,90 1370,36 1500,18" stroke-width="1.2" opacity="0.50"/>
+        <path d="M470,106 C700,58 850,196 1080,166 C1260,142 1370,88 1500,70" stroke-width="1" opacity="0.30"/>
+        <path d="M470,158 C700,110 850,248 1080,218 C1260,194 1370,140 1500,122" stroke-width="0.8" opacity="0.18"/>
+      </g>
+    </svg>
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow">Low-carbon operations</div>
+        <h1>少用一度电，<br>不少一分<em>舒适</em></h1>
+        <p class="hero-lead">
+          教室的灯、风扇、空调不必靠习惯开关。我们用人流、照度与空气质量的实测数据驱动策略，
+          该开时开，该停时停，并把每一次节省记进可核查的台账。
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#data">查看实时数据</a>
+          <a class="btn btn-ghost" href="#method">方法学说明</a>
+        </div>
+        <p class="hero-note">数据来源：12 个在运空间的传感器节点，采样间隔 30 秒。</p>
+      </div>
+
+      <aside class="live" aria-label="今日节电概览">
+        <div class="live-head">
+          <span class="live-live"><span class="dot" aria-hidden="true"></span>实时同步</span>
+          <span class="delta num">−18.4%</span>
+        </div>
+        <div style="margin-top:12px">
+          <div class="live-k">今日节电</div>
+          <div class="live-v num" data-count="7.62" data-dec="2">7.62<small>kWh</small></div>
+        </div>
+        <svg class="spark" viewBox="0 0 320 96" role="img" aria-label="今日逐时用电曲线">
+          <title>今日逐时用电曲线</title>
+          <line x1="0" y1="24" x2="320" y2="24" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="0" y1="56" x2="320" y2="56" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="4 4"/>
+          <line x1="0" y1="88" x2="320" y2="88" stroke="#E2E8F0" stroke-width="1"/>
+          <polyline fill="none" stroke="#0E9F6E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            points="0,66 32,58 64,70 96,40 128,48 160,28 192,36 224,20 256,30 288,44 320,38"/>
+          <circle cx="320" cy="38" r="3" fill="#0E9F6E"/>
+        </svg>
+        <div class="axis"><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span></div>
+        <div class="live-foot">
+          <span>在线节点 <b class="num">12 / 12</b></span>
+          <span>更新于 <b class="num">30 秒前</b></span>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="kpi section" id="data" style="padding-top:0" aria-label="关键指标">
+    <div class="wrap">
+      <div class="kpi-grid">
+        <div class="kpi-card enter" style="--d:0ms">
+          <div class="kpi-k">空场空耗</div>
+          <div class="kpi-v num" data-count="0" data-dec="0">0<span>次</span></div>
+          <div class="kpi-x">检测到无人后 30 秒内关停</div>
+        </div>
+        <div class="kpi-card enter" style="--d:60ms">
+          <div class="kpi-k">自然采光时长</div>
+          <div class="kpi-v num" data-count="6.2" data-dec="1">6.2<span>h</span></div>
+          <div class="kpi-x">照度 ≥300lx 时灯具降至 30%</div>
+        </div>
+        <div class="kpi-card enter" style="--d:120ms">
+          <div class="kpi-k">CO₂ 当量</div>
+          <div class="kpi-v num" data-count="4.3" data-dec="1">4.3<span>kg</span></div>
+          <div class="kpi-x">按 0.581 kgCO₂e/kWh 折算</div>
+        </div>
+        <div class="kpi-card enter" style="--d:180ms">
+          <div class="kpi-k">通风触发次数</div>
+          <div class="kpi-v num" data-count="3" data-dec="0">3<span>次</span></div>
+          <div class="kpi-x">eCO₂ ≥1200ppm 或 TVOC ≥400</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="tech">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">Green technology</div>
+          <h2>只用三件事把电省下来：<br>看见、判断、执行</h2>
+        </div>
+        <p>没有更换一台设备，也没有引入黑箱算法。策略是写死的门限规则，任何一条都能在台账里回溯到触发它的那组读数。</p>
+      </div>
+      <div class="tech">
+        <article class="tech-item enter" style="--d:0ms">
+          <div class="tech-idx">01 / 感知</div>
+          <h3>先让空间说话</h3>
+          <p>温湿度、照度、TVOC 与人流每 30 秒上报一次，缺失即降级，绝不拿假设当输入。</p>
+          <div class="chips"><span class="chip">AHT20</span><span class="chip">SGP30</span><span class="chip">BH1750</span><span class="chip">人流帧</span></div>
+        </article>
+        <article class="tech-item enter" style="--d:60ms">
+          <div class="tech-idx">02 / 决策</div>
+          <h3>门限比模型更可靠</h3>
+          <p>高温 29°C 开、27°C 关，照度够了就降灯，空气差了才通风。规则有限，结果可预测。</p>
+          <div class="chips"><span class="chip">≥29°C 开</span><span class="chip">≥300lx 降灯</span><span class="chip">≥1200ppm 通风</span></div>
+        </article>
+        <article class="tech-item enter" style="--d:120ms">
+          <div class="tech-idx">03 / 执行</div>
+          <h3>执行到设备末端</h3>
+          <p>灯环调光、风扇分档、红外发码，全部本地闭环；网络断了，策略照常工作。</p>
+          <div class="chips"><span class="chip">灯环 0–100%</span><span class="chip">风扇 1–5 档</span><span class="chip">红外 24 位帧</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="cases" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">Applications</div>
+          <h2>同一套策略，三种空间</h2>
+        </div>
+        <p>差别不在算法，而在门限值：教室容忍更宽的温区，办公区更看重照度，园区则把无人时段拉长。</p>
+      </div>
+      <div class="cases">
+        <article class="case enter" style="--d:0ms">
+          <svg class="case-art" viewBox="0 0 320 160" role="img" aria-label="教室场景示意图">
+            <title>教室场景</title>
+            <rect x="24" y="26" width="70" height="46" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
+            <line x1="59" y1="26" x2="59" y2="72" stroke="#94A3B8" stroke-width="1.2"/>
+            <line x1="24" y1="49" x2="94" y2="49" stroke="#94A3B8" stroke-width="1.2"/>
+            <rect x="120" y="96" width="52" height="16" rx="2" fill="none" stroke="#0E9F6E" stroke-width="1.2"/>
+            <rect x="196" y="96" width="52" height="16" rx="2" fill="none" stroke="#0E9F6E" stroke-width="1.2"/>
+            <rect x="272" y="96" width="30" height="16" rx="2" fill="none" stroke="#CBD5E1" stroke-width="1.2"/>
+            <rect x="120" y="124" width="52" height="16" rx="2" fill="none" stroke="#CBD5E1" stroke-width="1.2"/>
+            <rect x="196" y="124" width="52" height="16" rx="2" fill="none" stroke="#CBD5E1" stroke-width="1.2"/>
+            <line x1="24" y1="150" x2="296" y2="150" stroke="#E2E8F0" stroke-width="1"/>
+          </svg>
+          <div class="case-body">
+            <h3>教室</h3>
+            <p>按课表与实到人数供电，课间 5 分钟即降灯关风，不做整体拉闸。</p>
+            <div class="case-metric">
+              <div><b>−23%</b>日用电</div>
+              <div><b>29°C</b>开空调线</div>
+            </div>
+          </div>
+        </article>
+        <article class="case enter" style="--d:60ms">
+          <svg class="case-art" viewBox="0 0 320 160" role="img" aria-label="办公场景示意图">
+            <title>办公场景</title>
+            <rect x="34" y="34" width="56" height="34" rx="2" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
+            <rect x="126" y="34" width="56" height="34" rx="2" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
+            <rect x="218" y="34" width="56" height="34" rx="2" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
+            <rect x="34" y="96" width="56" height="34" rx="2" fill="none" stroke="#0E9F6E" stroke-width="1.2"/>
+            <rect x="126" y="96" width="56" height="34" rx="2" fill="none" stroke="#0E9F6E" stroke-width="1.2"/>
+            <rect x="218" y="96" width="56" height="34" rx="2" fill="none" stroke="#CBD5E1" stroke-width="1.2"/>
+            <line x1="24" y1="150" x2="296" y2="150" stroke="#E2E8F0" stroke-width="1"/>
+          </svg>
+          <div class="case-body">
+            <h3>办公区</h3>
+            <p>工位级照度优先，靠窗一排常态降灯；会议室空置 30 秒释放全部负载。</p>
+            <div class="case-metric">
+              <div><b>−18%</b>日用电</div>
+              <div><b>300lx</b>降灯阈值</div>
+            </div>
+          </div>
+        </article>
+        <article class="case enter" style="--d:120ms">
+          <svg class="case-art" viewBox="0 0 320 160" role="img" aria-label="园区场景示意图">
+            <title>园区场景</title>
+            <circle cx="262" cy="42" r="13" fill="none" stroke="#0E9F6E" stroke-width="1.2"/>
+            <rect x="40" y="72" width="44" height="72" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
+            <rect x="100" y="46" width="52" height="98" fill="none" stroke="#94A3B8" stroke-width="1.2"/>
+            <rect x="168" y="62" width="44" height="82" fill="none" stroke="#CBD5E1" stroke-width="1.2"/>
+            <rect x="228" y="86" width="52" height="58" fill="none" stroke="#CBD5E1" stroke-width="1.2"/>
+            <line x1="24" y1="144" x2="296" y2="144" stroke="#E2E8F0" stroke-width="1"/>
+          </svg>
+          <div class="case-body">
+            <h3>园区</h3>
+            <p>夜间只保留安防与应急照明，公共区域按人流密度供电，跨楼栋统一台账。</p>
+            <div class="case-metric">
+              <div><b>−31%</b>夜间负荷</div>
+              <div><b>0</b>空转设备</div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section cta" id="contact">
+    <div class="wrap cta-grid">
+      <div>
+        <div class="eyebrow" style="color:#5ee0b0">Get started</div>
+        <h2 style="margin-top:10px">先给我们一间教室，<br>两周后还你一份台账。</h2>
+        <p>试点包含 1 套传感节点、1 台网关与 14 天对比数据。不改造配电，不更换灯具。</p>
+      </div>
+      <div>
+        <form class="cta-form" id="lead" novalidate>
+          <label class="sr-only" for="email">工作邮箱</label>
+          <input id="email" type="email" name="email" placeholder="工作邮箱" autocomplete="email" aria-label="工作邮箱" required>
+          <button type="submit">预约试点</button>
+        </form>
+        <p class="cta-msg" id="lead-msg" role="status" aria-live="polite"></p>
+        <p class="cta-fine">仅用于安排试点，不发营销邮件。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="method" style="padding-block:48px">
+    <div class="wrap">
+      <div style="border-top:1px solid var(--line);padding-top:22px;display:flex;flex-wrap:wrap;gap:16px 40px;justify-content:space-between">
+        <div style="font-size:var(--fs-sm);color:var(--ink-2);max-width:56ch">
+          <b style="font-weight:500;color:var(--ink)">统计口径</b>：节电量 = 基线 14 日均值 − 实测值；碳排按 0.581 kgCO₂e/kWh 折算；
+          所有数字均来自在运节点上报，无人工估算与补数。
+        </div>
+        <a class="btn btn-ghost" href="#contact">索取方法学 PDF</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-row">
+    <span>© <span id="year">2026</span> EcoVision · 低碳空间运行系统</span>
+    <span>采样间隔 30s · 节点 12 · 最近更新 <span class="num">22:18</span></span>
+    <span><a href="#method">方法学</a> · <a href="#contact">联系我们</a></span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var gate = document.getElementById("gate");
+  var gateBtn = document.getElementById("gate-btn");
+  if (gate && gateBtn) {
+    gateBtn.focus();
+    gateBtn.addEventListener("click", function () {
+      var root = document.documentElement;
+      var slow = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      root.classList.add("ready", "lock");
+      root.classList.remove("gated");
+      gate.classList.add("is-leaving");
+      setTimeout(function () {
+        if (gate.parentNode) gate.parentNode.removeChild(gate);
+        root.classList.remove("lock");
+        var main = document.getElementById("main");
+        if (main) main.focus({ preventScroll: true });
+      }, slow ? 200 : 780);
+    });
+  }
+
+  var nums = document.querySelectorAll("[data-count]");
+  nums.forEach(function (el) {
+    var target = parseFloat(el.getAttribute("data-count"));
+    var dec = parseInt(el.getAttribute("data-dec") || "0", 10);
+    var unit = el.querySelector("small");
+    if (reduce) { el.firstChild.nodeValue = target.toFixed(dec); return; }
+    el.firstChild.nodeValue = dec ? "0.0" : "0";
+    var start = null, dur = 800;
+    function step(ts) {
+      if (start === null) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      var v = target * (1 - Math.pow(1 - p, 3));
+      el.firstChild.nodeValue = v.toFixed(dec);
+      if (p < 1) requestAnimationFrame(step);
+      else el.firstChild.nodeValue = target.toFixed(dec);
+    }
+    requestAnimationFrame(step);
+  });
+
+  var form = document.getElementById("lead");
+  var msg = document.getElementById("lead-msg");
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = document.getElementById("email").value.trim();
+      var ok = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+      msg.textContent = ok ? "已收到，我们会在 1 个工作日内联系你。" : "请填写有效的工作邮箱。";
+      msg.style.color = ok ? "#d1fae5" : "#fbbf24";
+      if (ok) form.reset();
+    });
+  }
+
+  document.getElementById("year").textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>

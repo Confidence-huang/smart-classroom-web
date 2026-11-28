@@ -1,0 +1,54 @@
+:root {
+  --canvas: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+
+  --brand: #0e9f6e;
+  --brand-ink: #0b7c56;
+  --brand-soft: #d1fae5;
+  --brand-wash: #ecfdf5;
+  --cyan: #0891b2;
+  --cyan-soft: #e0f7fa;
+  --lime: #84cc16;
+
+  --ink: #0f172a;
+  --ink-2: #475569;
+  --ink-3: #5b6b80;
+  --ink-4: #94a3b8;
+  --line: #e2e8f0;
+  --line-soft: rgba(226, 232, 240, 0.72);
+
+  --dark: #0b1220;
+  --dark-2: #111c2e;
+
+  --mint: #e2f5ea;
+  --sky: #d9e8fb;
+  --grad-hero: linear-gradient(150deg, #e2f5ea 0%, #e6f2f7 42%, #d9e8fb 100%);
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+
+  --sh-1: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --sh-2: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px -16px rgba(15, 23, 42, 0.16);
+
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur: 240ms;
+
+  --wrap: 1200px;
+  --gutter: clamp(20px, 4vw, 40px);
+  --section: clamp(56px, 8vw, 96px);
+
+  --fs-h1: clamp(2.25rem, 4.8vw, 3.75rem);
+  --fs-h2: clamp(1.5rem, 2.6vw, 2.125rem);
+  --fs-h3: 1.0625rem;
+  --fs-lead: clamp(1rem, 1.3vw, 1.125rem);
+  --fs-body: 1rem;
+  --fs-sm: 0.875rem;
+  --fs-xs: 0.75rem;
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
