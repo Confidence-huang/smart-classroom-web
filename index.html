@@ -4,18 +4,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#08090a" />
+    <meta name="theme-color" content="#f8fafc" />
     <meta name="description" content="移远杯智慧教室 4G 实时数据看板" />
-    <title>EcoVision · 智慧教室实时系统</title>
+    <title>EcoVision · 智慧教室节能监测系统</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <!-- 极克制暗夜环境光晕（Linear / Raycast 风格） -->
+    <!-- 明亮节能科技感背景：渐变色块 + 几何图形装饰（低透明度不干扰阅读） -->
     <div class="ambient-canvas" aria-hidden="true">
-      <div class="ambient-aurora"></div>
-      <div class="ambient-vignette"></div>
+      <div class="ambient-orb orb-mint"></div>
+      <div class="ambient-orb orb-sky"></div>
+      <div class="ambient-orb orb-lime"></div>
+      <div class="ambient-dots"></div>
+      <svg class="geo-backdrop" viewBox="0 0 1440 900" fill="none" preserveAspectRatio="xMidYMin slice">
+        <circle cx="1240" cy="180" r="340" stroke="url(#geoGrad1)" stroke-width="1.2" stroke-dasharray="6 8" />
+        <circle cx="1240" cy="180" r="240" stroke="url(#geoGrad2)" stroke-width="1" />
+        <polygon points="160,120 220,155 220,225 160,260 100,225 100,155" stroke="rgba(5,150,105,0.14)" stroke-width="1.2" fill="rgba(16,185,129,0.03)" />
+        <polygon points="1320,640 1370,670 1370,730 1320,760 1270,730 1270,670" stroke="rgba(2,132,199,0.14)" stroke-width="1.2" fill="rgba(56,189,248,0.03)" />
+        <rect x="64" y="620" width="96" height="96" rx="22" transform="rotate(18 64 620)" stroke="rgba(5,150,105,0.12)" stroke-width="1.2" fill="rgba(52,211,153,0.04)" />
+        <defs>
+          <linearGradient id="geoGrad1" x1="900" y1="0" x2="1440" y2="520" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#059669" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="#0284c7" stop-opacity="0.06" />
+          </linearGradient>
+          <linearGradient id="geoGrad2" x1="1000" y1="0" x2="1440" y2="420" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#0284c7" stop-opacity="0.18" />
+            <stop offset="100%" stop-color="#10b981" stop-opacity="0.04" />
+          </linearGradient>
+        </defs>
+      </svg>
     </div>
 
     <div class="page-shell">

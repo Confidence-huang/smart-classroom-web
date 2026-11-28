@@ -890,11 +890,11 @@ function renderTrendChart() {
   grad.setAttribute('y2', '1')
   const s1 = document.createElementNS(ns, 'stop')
   s1.setAttribute('offset', '0%')
-  s1.setAttribute('stop-color', '#6e7bf2')
-  s1.setAttribute('stop-opacity', '0.32')
+  s1.setAttribute('stop-color', '#059669')
+  s1.setAttribute('stop-opacity', '0.28')
   const s2 = document.createElementNS(ns, 'stop')
   s2.setAttribute('offset', '100%')
-  s2.setAttribute('stop-color', '#6e7bf2')
+  s2.setAttribute('stop-color', '#0284c7')
   s2.setAttribute('stop-opacity', '0.02')
   grad.append(s1, s2)
   defs.append(grad)
@@ -906,8 +906,8 @@ function renderTrendChart() {
   const line = document.createElementNS(ns, 'path')
   line.setAttribute('d', lineD)
   line.setAttribute('fill', 'none')
-  line.setAttribute('stroke', '#8c96ff')
-  line.setAttribute('stroke-width', '2.2')
+  line.setAttribute('stroke', '#059669')
+  line.setAttribute('stroke-width', '2.4')
   line.setAttribute('stroke-linecap', 'round')
   line.setAttribute('stroke-linejoin', 'round')
 
@@ -916,8 +916,8 @@ function renderTrendChart() {
   dot.setAttribute('cx', String(last[0]))
   dot.setAttribute('cy', String(last[1]))
   dot.setAttribute('r', '4.5')
-  dot.setAttribute('fill', '#f7f8f8')
-  dot.setAttribute('stroke', '#6e7bf2')
+  dot.setAttribute('fill', '#059669')
+  dot.setAttribute('stroke', '#ffffff')
   dot.setAttribute('stroke-width', '2')
 
   svg.replaceChildren(defs, area, line, dot)
@@ -1017,8 +1017,8 @@ if (heroCanvas) {
         if (c === 0) ctx.moveTo(x, y)
         else ctx.lineTo(x, y)
       }
-      ctx.strokeStyle = r % 3 === 0 ? `rgba(110, 123, 242, ${alpha})` : `rgba(247, 248, 248, ${alpha * 0.55})`
-      ctx.lineWidth = r % 3 === 0 ? 1.5 : 1
+      ctx.strokeStyle = r % 3 === 0 ? `rgba(5, 150, 105, ${alpha * 1.15})` : `rgba(2, 132, 199, ${alpha * 0.72})`
+      ctx.lineWidth = r % 3 === 0 ? 1.8 : 1.1
       ctx.stroke()
     }
     if (!reduceMotion) {
