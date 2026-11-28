@@ -4,122 +4,119 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#060a09" />
+    <meta name="theme-color" content="#08090a" />
     <meta name="description" content="移远杯智慧教室 4G 实时数据看板" />
-    <title>智慧教室 · EcoVision AIoT</title>
+    <title>EcoVision · 智慧教室实时系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <!-- 环境光晕背景层 -->
+    <!-- 极克制暗夜环境光晕（Linear / Raycast 风格） -->
     <div class="ambient-canvas" aria-hidden="true">
-      <div class="ambient-orb orb-emerald"></div>
-      <div class="ambient-orb orb-cyan"></div>
-      <div class="ambient-grid"></div>
+      <div class="ambient-aurora"></div>
+      <div class="ambient-vignette"></div>
     </div>
 
     <div class="page-shell">
       <header class="topbar">
         <div class="brand">
-          <span class="brand-mark" aria-hidden="true">Q<span>·</span></span>
+          <span class="brand-mark" aria-hidden="true">Q</span>
           <div class="brand-text">
-            <strong>EcoVision · 智慧教室</strong>
-            <span class="brand-sub">CLASSROOM 01 · AIoT LIVE</span>
+            <strong>EcoVision</strong>
+            <span class="brand-sub">CLASSROOM 01 · AIoT</span>
           </div>
         </div>
 
-        <div class="topbar-actions">
-          <button id="settings-button" class="topbar-conn-btn" type="button" title="设置云端连接">
+        <nav class="topbar-actions" aria-label="系统操作">
+          <button id="settings-button" class="topbar-pill-btn" type="button" title="设置云端连接">
             <span id="broker-pill" class="pill pill-idle">未连接</span>
-            <span class="topbar-conn-label">连接设置</span>
+            <span class="topbar-btn-label">连接</span>
           </button>
-          <button id="system-info-btn" class="topbar-icon-btn" type="button" aria-label="系统架构与联调说明" title="系统架构与联调说明">
-            <span aria-hidden="true">?</span>
-            <span class="topbar-btn-text">链路说明</span>
+          <button id="system-info-btn" class="topbar-pill-btn" type="button" aria-label="系统架构与联调说明" title="系统架构与联调说明">
+            <span class="topbar-mono-icon" aria-hidden="true">⌘</span>
+            <span class="topbar-btn-label">链路说明</span>
           </button>
-          <span class="edition">移远杯 · 2026</span>
-        </div>
+          <span class="edition">2026 · 联调版</span>
+        </nav>
       </header>
 
       <main class="dashboard-main">
-        <!-- 沉浸式叙事首屏（滚动驱动景深与尺度交接） -->
+        <!-- 沉浸式首屏：左叙事排版 + 右侧实时 Canvas 空间波场 -->
         <section id="hero-stage" class="hero-stage" aria-labelledby="room-title">
           <div class="hero-depth-layer">
             <div class="hero-copy">
-              <p class="hero-kicker">4G CAT.1 · EDGE VISION · CLOUD CONTROL</p>
+              <div class="hero-eyebrow-row">
+                <span class="hero-kicker">4G CAT.1 · EDGE VISION · CLOUD CONTROL</span>
+                <span id="data-pill" class="pill pill-idle">等待真实数据</span>
+              </div>
               <h1 id="room-title" class="hero-title">
                 感知教室的<br />
-                <span class="hero-gradient-text">每一次呼吸。</span>
+                <span class="hero-silver-fade">每一次微变。</span>
               </h1>
               <p class="hero-lead">
-                K230 边缘视觉、AHT20 / BH1750 / SGP30 多维传感与 EC200U 4G 链路实时共振，
-                在同一座玻璃态控制台上完成观测、趋势推演与硬件闭环。
+                K230 边缘视觉、多维环境传感与 EC200U 4G 链路实时同步。
+                以精密仪器般的克制界面，完成毫秒级观测、趋势推演与硬件闭环。
               </p>
               <div class="hero-meta-row">
                 <div class="receipt-inline" aria-live="polite" aria-label="网页消息接收状态">
-                  <span id="receipt-label" class="receipt-label">最近消息</span>
+                  <span id="receipt-label" class="receipt-label">遥测回执</span>
                   <strong id="latest-message">尚未收到新消息</strong>
                   <span id="latest-message-time" class="receipt-time">等待上报</span>
                 </div>
-                <div class="freshness-cluster">
-                  <span id="data-pill" class="pill pill-idle">等待真实数据</span>
-                  <span id="last-updated" class="freshness-time">暂无采集时间</span>
-                </div>
+                <span id="last-updated" class="freshness-time">暂无采集时间</span>
               </div>
             </div>
 
-            <!-- 视觉焦点：动态遥测核心环（随滚动产生景深缩放与旋转） -->
             <div class="hero-visual" aria-hidden="true">
-              <div class="telemetry-core">
-                <div class="core-ring ring-outer"></div>
-                <div class="core-ring ring-mid"></div>
-                <div class="core-ring ring-inner"></div>
-                <div class="core-center">
-                  <span class="core-label">ECOVISION</span>
-                  <strong class="core-status">LIVE</strong>
-                </div>
+              <canvas id="hero-canvas" class="hero-canvas" width="420" height="320"></canvas>
+              <div class="hero-canvas-caption">
+                <span>NODE TELEMETRY FIELD</span>
+                <span>STM32F413 · K230 · EC200U</span>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- Bento 遥测矩阵：6 项核心指标 -->
+        <!-- 非对称 Bento 遥测矩阵（打破 6 等分小框模板感） -->
         <section class="readings reveal-block" aria-label="实时测量值">
-          <article class="reading reading-people">
+          <article class="reading reading-people bento-hero">
             <div class="reading-top">
               <span>识别人数</span>
-              <span class="reading-badge">K230</span>
+              <span class="reading-badge">K230 VISION</span>
             </div>
-            <div class="reading-value">
+            <div class="reading-value reading-value-xl">
               <strong id="people-count">—</strong>
               <span class="reading-unit">人</span>
             </div>
             <p id="people-source" class="reading-meta">计划由 K230 提供</p>
           </article>
 
-          <article class="reading">
+          <article class="reading bento-climate">
             <div class="reading-top">
               <span>温度</span>
               <span class="reading-badge">AHT20</span>
             </div>
-            <div class="reading-value">
+            <div class="reading-value reading-value-lg">
               <strong id="temperature-c">—</strong>
               <span class="reading-unit">°C</span>
             </div>
             <p id="temperature-source" class="reading-meta">计划由环境传感器提供</p>
           </article>
 
-          <article class="reading">
+          <article class="reading bento-climate">
             <div class="reading-top">
               <span>相对湿度</span>
               <span class="reading-badge">% RH</span>
             </div>
-            <div class="reading-value">
+            <div class="reading-value reading-value-lg">
               <strong id="humidity-pct">—</strong>
               <span class="reading-unit">%</span>
             </div>
             <p id="humidity-source" class="reading-meta">计划由环境传感器提供</p>
           </article>
 
-          <article class="reading">
+          <article class="reading bento-sub">
             <div class="reading-top">
               <span>环境光照</span>
               <span class="reading-badge">BH1750</span>
@@ -131,7 +128,7 @@
             <p id="light-source" class="reading-meta">计划由外接 BH1750 提供</p>
           </article>
 
-          <article class="reading">
+          <article class="reading bento-sub">
             <div class="reading-top">
               <span>空气质量</span>
               <span id="air-conn-pill" class="pill pill-idle">待连接</span>
@@ -143,7 +140,7 @@
             <p id="air-detail" class="reading-meta">eCO₂ — · TVOC —</p>
           </article>
 
-          <article class="reading">
+          <article class="reading bento-sub">
             <div class="reading-top">
               <span>4G 网络</span>
               <span id="link-pill" class="pill pill-idle">待连接</span>
@@ -156,10 +153,10 @@
           </article>
         </section>
 
-        <!-- 主工作区 Bento 双栏：左趋势与流水 / 右硬件控制与 AI 助手 -->
+        <!-- 主工作区 Bento 双栏 -->
         <div class="workspace-grid">
           <div class="workspace-main">
-            <section class="glass-panel trend-panel reveal-block" aria-labelledby="trend-title">
+            <section class="surface-card trend-panel reveal-block" aria-labelledby="trend-title">
               <div class="panel-head">
                 <div>
                   <span class="panel-kicker">TELEMETRY STREAM</span>
@@ -174,12 +171,12 @@
               </div>
               <div id="trend-chart-wrap" class="trend-chart-wrap">
                 <svg id="trend-svg" class="trend-svg" viewBox="0 0 640 190" preserveAspectRatio="none" aria-label="遥测趋势曲线"></svg>
-                <div id="trend-empty" class="trend-empty">连接并收到至少 2 条历史样本后自动绘制发光趋势曲线。</div>
+                <div id="trend-empty" class="trend-empty">连接并收到至少 2 条历史样本后自动绘制变化曲线。</div>
               </div>
               <div id="trend-summary" class="trend-summary"></div>
             </section>
 
-            <section class="glass-panel logs-panel reveal-block" aria-labelledby="logs-title">
+            <section class="surface-card logs-panel reveal-block" aria-labelledby="logs-title">
               <div class="panel-head">
                 <div>
                   <span class="panel-kicker">EVENT &amp; ARCHIVE</span>
@@ -211,7 +208,7 @@
           </div>
 
           <aside class="workspace-side">
-            <section id="unified-control-panel" class="glass-panel control-panel reveal-block" aria-labelledby="control-title">
+            <section id="unified-control-panel" class="surface-card control-panel reveal-block" aria-labelledby="control-title">
               <div class="panel-head">
                 <div>
                   <span class="panel-kicker">COMMAND UPLINK</span>
@@ -291,7 +288,7 @@
             <section class="anda-entry-section reveal-block" aria-label="AI 助手入口">
               <button id="open-agent-drawer" class="anda-entry-card" type="button">
                 <div class="anda-entry-left">
-                  <span class="anda-entry-icon" aria-hidden="true">✨</span>
+                  <span class="anda-entry-icon" aria-hidden="true">✦</span>
                   <div class="anda-entry-text">
                     <div class="anda-entry-title">
                       <span>智慧教室 AI 助手</span>
@@ -309,8 +306,8 @@
           </aside>
         </div>
 
-        <!-- 叙事收束：硬件链路全景条 -->
-        <section class="glass-panel pipeline-band reveal-block" aria-label="当前数据链路">
+        <!-- 端边云链路全景带 -->
+        <section class="surface-card pipeline-band reveal-block" aria-label="当前数据链路">
           <div class="pipeline-head">
             <span class="panel-kicker">SIGNAL TOPOLOGY</span>
             <h2>端边云协同链路</h2>

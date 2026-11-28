@@ -890,11 +890,11 @@ function renderTrendChart() {
   grad.setAttribute('y2', '1')
   const s1 = document.createElementNS(ns, 'stop')
   s1.setAttribute('offset', '0%')
-  s1.setAttribute('stop-color', '#34d399')
+  s1.setAttribute('stop-color', '#6e7bf2')
   s1.setAttribute('stop-opacity', '0.32')
   const s2 = document.createElementNS(ns, 'stop')
   s2.setAttribute('offset', '100%')
-  s2.setAttribute('stop-color', '#34d399')
+  s2.setAttribute('stop-color', '#6e7bf2')
   s2.setAttribute('stop-opacity', '0.02')
   grad.append(s1, s2)
   defs.append(grad)
@@ -906,8 +906,8 @@ function renderTrendChart() {
   const line = document.createElementNS(ns, 'path')
   line.setAttribute('d', lineD)
   line.setAttribute('fill', 'none')
-  line.setAttribute('stroke', '#34d399')
-  line.setAttribute('stroke-width', '2.5')
+  line.setAttribute('stroke', '#8c96ff')
+  line.setAttribute('stroke-width', '2.2')
   line.setAttribute('stroke-linecap', 'round')
   line.setAttribute('stroke-linejoin', 'round')
 
@@ -916,8 +916,8 @@ function renderTrendChart() {
   dot.setAttribute('cx', String(last[0]))
   dot.setAttribute('cy', String(last[1]))
   dot.setAttribute('r', '4.5')
-  dot.setAttribute('fill', '#34d399')
-  dot.setAttribute('stroke', '#060a09')
+  dot.setAttribute('fill', '#f7f8f8')
+  dot.setAttribute('stroke', '#6e7bf2')
   dot.setAttribute('stroke-width', '2')
 
   svg.replaceChildren(defs, area, line, dot)
@@ -983,4 +983,48 @@ for (const card of document.querySelectorAll('.reading')) {
     card.style.setProperty('--mx', `${e.clientX - rect.left}px`)
     card.style.setProperty('--my', `${e.clientY - rect.top}px`)
   })
+}
+
+// 3D 投影空间波场 Canvas（替代普通 CSS 虚线框，随滚动/鼠标轻微呼吸）
+const heroCanvas = document.getElementById('hero-canvas')
+if (heroCanvas) {
+  const ctx = heroCanvas.getContext('2d')
+  let phase = 0
+  let pointerTilt = 0
+  heroCanvas.addEventListener('pointermove', e => {
+    const r = heroCanvas.getBoundingClientRect()
+    pointerTilt = ((e.clientX - r.left) / r.width - 0.5) * 0.45
+  })
+  const drawField = () => {
+    if (!ctx) return
+    const w = heroCanvas.width
+    const h = heroCanvas.height
+    ctx.clearRect(0, 0, w, h)
+    const rows = 14
+    const cols = 22
+    const scrollP = Number(getComputedStyle(document.documentElement).getPropertyValue('--scroll-p')) || 0
+    for (let r = 0; r < rows; r++) {
+      const z = r / (rows - 1)
+      const yBase = 68 + z * 195
+      const alpha = 0.12 + (1 - z) * 0.45
+      ctx.beginPath()
+      for (let c = 0; c < cols; c++) {
+        const u = c / (cols - 1)
+        const x = 24 + u * (w - 48)
+        const wave = Math.sin(u * 5.2 + phase + r * 0.42 + scrollP * 3) * (10 + (1 - z) * 14)
+        const tilt = (u - 0.5) * pointerTilt * 28
+        const y = yBase + wave + tilt
+        if (c === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      }
+      ctx.strokeStyle = r % 3 === 0 ? `rgba(110, 123, 242, ${alpha})` : `rgba(247, 248, 248, ${alpha * 0.55})`
+      ctx.lineWidth = r % 3 === 0 ? 1.5 : 1
+      ctx.stroke()
+    }
+    if (!reduceMotion) {
+      phase += 0.018
+      requestAnimationFrame(drawField)
+    }
+  }
+  drawField()
 }
