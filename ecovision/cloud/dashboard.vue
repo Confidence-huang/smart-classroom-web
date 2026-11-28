@@ -42,12 +42,20 @@
       <form class="ac" v-if="d.ac_control_available" @submit.prevent="applyAc(d, $event)">
         <fieldset :disabled="!d.can_control || !socketReady() || stale(d) || waiting(d.device_id)">
           <legend>模拟空调</legend>
+          <span v-if="d.telemetry.ac_mode && d.telemetry.ac_temp_c !== undefined">当前：{{ d.telemetry.ac_on ? '开机' : '已关机' }} · {{ d.telemetry.ac_mode === 'HEAT' ? '制热' : '制冷' }} · {{ d.telemetry.ac_temp_c }} °C</span>
+          <label>模式
+            <select name="acMode" :value="selection(d, 'acMode') ?? d.telemetry.ac_mode ?? 'COOL'" @change="selectStr(d, 'acMode', $event)">
+              <option value="COOL">制冷 (COOL)</option>
+              <option value="HEAT">制热 (HEAT)</option>
+            </select>
+          </label>
           <label>设定温度
             <select name="acTemp" :value="selection(d, 'acTemp') ?? acDefault(d)" @change="select(d, 'acTemp', $event)">
               <option v-for="offset in acTemperatureCount()" :key="offset" :value="msg.payload.ac_temperature.minimum + offset - 1">{{ msg.payload.ac_temperature.minimum + offset - 1 }} °C</option>
             </select>
           </label>
           <button type="submit">开机 / 应用温度</button>
+          <button v-if="d.ac_mode_available" type="button" @click="request(d, { ac_mode: (selection(d, 'acMode') ?? d.telemetry.ac_mode ?? 'COOL') === 'HEAT' ? 'COOL' : 'HEAT' })">切换制冷/制热</button>
           <button type="button" @click="request(d, { ac_temp_c: 0 })">关机</button>
           <button type="button" @click="request(d, { mode: 'AUTO' })">恢复自动模式</button>
         </fieldset>
@@ -94,7 +102,14 @@ export default {
       const previous = draft?.boot === boot && draft.epoch === epoch ? draft : { boot, epoch }
       this.drafts[device.device_id] = { ...previous, [field]: Number(event.target.value) }
     },
+    selectStr(device, field, event) {
+      const draft = this.drafts[device.device_id]
+      const { boot_id: boot, control_epoch: epoch } = device.telemetry
+      const previous = draft?.boot === boot && draft.epoch === epoch ? draft : { boot, epoch }
+      this.drafts[device.device_id] = { ...previous, [field]: event.target.value }
+    },
     acDefault(device) {
+      if (device.telemetry.ac_temp_c !== undefined) return device.telemetry.ac_temp_c
       const last = this.msg.payload.commands.find(r => r.command.device_id === device.device_id &&
         r.command.boot_id === device.telemetry.boot_id && r.state === 'AC_ACCEPTED' && r.command.ac_temp_c > 0)
       return last?.command.ac_temp_c ?? 26
@@ -104,10 +119,18 @@ export default {
       return maximum - minimum + 1
     },
     applyAc(device, event) {
-      this.request(device, { ac_temp_c: Number(new FormData(event.currentTarget).get('acTemp')) })
+      const form = new FormData(event.currentTarget)
+      const intent = { ac_temp_c: Number(form.get('acTemp')) }
+      if (device.ac_mode_available) intent.ac_mode = form.get('acMode') || 'COOL'
+      this.request(device, intent)
     },
     requestLabel(command) {
-      if (command.ac_temp_c !== undefined) return command.ac_temp_c ? '模拟空调开机 / ' + command.ac_temp_c + ' °C' : '模拟空调关机'
+      if (command.ac_temp_c !== undefined || command.ac_mode !== undefined) {
+        const modeZh = command.ac_mode === 'HEAT' ? '制热' : command.ac_mode === 'COOL' ? '制冷' : ''
+        if (command.ac_temp_c === 0) return '模拟空调关机'
+        if (command.ac_temp_c !== undefined) return `模拟空调开机 / ${modeZh ? modeZh + ' · ' : ''}${command.ac_temp_c} °C`
+        return `模拟空调切换模式 / ${modeZh}`
+      }
       return command.mode === 'AUTO' ? '恢复自动' : '风扇 ' + this.fanLabel(command) + ' / 灯环 ' + this.lampLabel(command.led_out)
     },
     apply(device, event) {
