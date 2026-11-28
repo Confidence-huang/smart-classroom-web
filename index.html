@@ -295,8 +295,16 @@
               <div class="ctrl-divider" aria-hidden="true"></div>
 
               <div class="ctrl-section">
-                <div class="ctrl-section-head">
+              <div class="ctrl-section-head">
                   <h3>模拟空调</h3>
+                  <span id="ctrl-ac-state" class="pill pill-idle">未上报</span>
+                </div>
+                <div class="ctrl-field ctrl-field-inline">
+                  <label>运行模式</label>
+                  <div class="ctrl-actions" role="group" aria-label="空调制冷制热模式">
+                    <button id="ctrl-ac-cool-btn" class="button button-secondary" type="button" data-ac-mode="COOL" disabled>制冷</button>
+                    <button id="ctrl-ac-heat-btn" class="button button-secondary" type="button" data-ac-mode="HEAT" disabled>制热</button>
+                  </div>
                 </div>
                 <div class="ctrl-field ctrl-field-inline">
                   <label for="ctrl-ac-temp">设定温度</label>

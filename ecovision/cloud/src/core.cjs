@@ -6,12 +6,16 @@ const ajv = new Ajv({ strict: true });
 // The schemas supply both the wire validators and the dashboard level range.
 const schemas = Object.fromEntries(['telemetry', 'ack', 'status', 'command'].map(k => [k, require(`../../contracts/${k}.schema.json`)]));
 const fanLevelSchemas = Object.fromEntries(['telemetry', 'ack', 'command'].map(k => [k, require(`../../contracts/${k}.v1.1.schema.json`)]));
-// v1.2 advertises the dedicated IR demonstration action on otherwise v1.1 telemetry.
+// v1.2 advertises the dedicated IR demonstration action; v1.3 adds AC state telemetry and COOL/HEAT mode.
 const acVersion = '1.2.0';
+const acModeVersion = '1.3.0';
+const isAcVersion = v => v === acVersion || v === acModeVersion;
 const acSchemas = Object.fromEntries(['telemetry', 'ack', 'command'].map(k => [k, require("../../contracts/"+k+".v1.2.schema.json")]));
+const acModeSchemas = Object.fromEntries(['telemetry', 'ack', 'command'].map(k => [k, require("../../contracts/"+k+".v1.3.schema.json")]));
 const validators = new Map(Object.entries(schemas).map(([kind, schema]) => [`${kind}:${policy.version}`, ajv.compile(schema)]));
 for (const [kind, schema] of Object.entries(fanLevelSchemas)) validators.set(`${kind}:${policy.fan_levels_version}`, ajv.compile(schema));
 for (const [kind, schema] of Object.entries(acSchemas)) validators.set(kind + ':' + acVersion, ajv.compile(schema));
+for (const [kind, schema] of Object.entries(acModeSchemas)) validators.set(kind + ':' + acModeVersion, ajv.compile(schema));
 const newer = (n, old) => old === undefined || ((n - old) >>> 0) > 0 && ((n - old) >>> 0) < 0x80000000;
 function validate(kind, raw) {
   const text = Buffer.isBuffer(raw) ? raw.toString('utf8') : raw;
@@ -26,11 +30,11 @@ function validate(kind, raw) {
     }
     if (p.time_valid !== (p.ts !== null)) throw Error('TIME');
   }
-  if ((kind === 'telemetry' || kind === 'ack' && p.v !== acVersion) && p.mode !== 'REMOTE' && p.hold_remaining_s !== 0) throw Error('LEASE');
+  if ((kind === 'telemetry' || kind === 'ack' && !isAcVersion(p.v)) && p.mode !== 'REMOTE' && p.hold_remaining_s !== 0) throw Error('LEASE');
   if (kind === 'ack' && (['APPLIED', 'AC_ACCEPTED'].includes(p.status) !== (p.reason === 'OK') ||
       (p.status === 'AC_UNKNOWN') !== (p.reason === 'AC_UNCONFIRMED'))) throw Error('ACK_REASON');
   if (kind === 'status' && ((p.state === 'online') !== (p.reason === 'connected'))) throw Error('STATUS_REASON');
-  if (kind === 'command' && p.v !== acVersion) {
+  if (kind === 'command' && !isAcVersion(p.v)) {
     if (p.mode === 'AUTO' ? p.fan_out !== null || p.led_out !== null || p.hold_s !== 0 : p.fan_out === null || p.led_out === null || p.hold_s < 30) throw Error('PARAMETERS');
   }
   return p;
@@ -65,7 +69,9 @@ class Cloud {
           throw Error('ACK_OUTPUT_MISMATCH');
         }
         if (['AC_ACCEPTED', 'AC_UNKNOWN'].includes(p.status) &&
-            (p.ac_temp_c !== requested.ac_temp_c || p.control_epoch !== requested.control_epoch)) throw Error('ACK_AC_MISMATCH');
+            ((requested.ac_temp_c !== undefined && p.ac_temp_c !== requested.ac_temp_c) ||
+             (requested.ac_mode !== undefined && p.ac_mode !== requested.ac_mode) ||
+             p.control_epoch !== requested.control_epoch)) throw Error('ACK_AC_MISMATCH');
         const late = this.now() - record.started >= policy.mqtt.ack_timeout_s * 1000;
         record.acks.push({ observed_at: new Date().toISOString(), payload: p });
         record.acks = record.acks.slice(-32);
@@ -96,7 +102,8 @@ class Cloud {
     const offline = !this.connected || d.status?.state === 'offline' || d.telemetry?.net_state !== 'ONLINE';
     return { device_id: d.device_id, simulated: d.simulated, telemetry: d.telemetry, status: d.status, last_received_at: d.last_received_at || null, age_ms: age,
       connection: stale ? 'STALE' : offline ? 'OFFLINE' : 'ONLINE',
-      ac_control_available: d.telemetry?.v === acVersion,
+      ac_control_available: isAcVersion(d.telemetry?.v),
+      ac_mode_available: d.telemetry?.v === acModeVersion,
       can_control: !stale && !offline && d.telemetry.time_valid && d.telemetry.mode !== 'LOCAL_OFF' };
   }
   command(id, intent, observed) {
@@ -106,9 +113,11 @@ class Cloud {
     const t = d.telemetry;
     // Sign only the device session the operator saw, even if telemetry has since recovered.
     if (observed?.boot_id !== t.boot_id || observed?.control_epoch !== t.control_epoch) throw Error('STALE_CONTROL_CONTEXT');
-    const ac = Object.hasOwn(intent, 'ac_temp_c');
-    if (ac ? Object.keys(intent).length !== 1 : Object.keys(intent).some(k => !['mode', 'fan_out', 'fan_level', 'led_out', 'hold_s'].includes(k))) throw Error('INTENT');
+    const ac = Object.hasOwn(intent, 'ac_temp_c') || Object.hasOwn(intent, 'ac_mode');
+    if (ac ? Object.keys(intent).some(k => !['ac_temp_c', 'ac_mode'].includes(k))
+           : Object.keys(intent).some(k => !['mode', 'fan_out', 'fan_level', 'led_out', 'hold_s'].includes(k))) throw Error('INTENT');
     if (ac && !view.ac_control_available) throw Error('AC_UNAVAILABLE');
+    if (Object.hasOwn(intent, 'ac_mode') && !view.ac_mode_available) throw Error('AC_MODE_UNAVAILABLE');
     if (this.commands.filter(r => r.state === 'PENDING' && this.now() - r.started < 10000).length >= 32) throw Error('BUSY');
     // Use v1.1 only when matching fresh telemetry advertises support for it.
     const supportsLevels = t.v === policy.fan_levels_version || view.ac_control_available;
@@ -121,10 +130,14 @@ class Cloud {
     // Reject differences outside a command lifetime. Keep the receiver's future and expiry checks unchanged.
     if (Math.abs(cloudUtc - deviceUtc) >= ttl) throw Error('CLOCK_SKEW');
     const context = { device_id: id, boot_id: t.boot_id, control_epoch: t.control_epoch, cmd_id: randomUUID(), issued_at: Math.min(cloudUtc, deviceUtc), ttl_s: ttl };
-    const cmd = ac ? { v: acVersion, ...context, ac_temp_c: intent.ac_temp_c } : {
+    const cmd = ac ? { v: view.ac_mode_available ? acModeVersion : acVersion, ...context } : {
       v: version, ...context, mode: intent.mode, fan_out: intent.mode === 'AUTO' ? null : intent.fan_out,
       led_out: intent.mode === 'AUTO' ? null : intent.led_out, hold_s: intent.mode === 'AUTO' ? 0 : intent.hold_s ?? policy.control.hold_default_s
     };
+    if (ac) {
+      if (Object.hasOwn(intent, 'ac_temp_c')) cmd.ac_temp_c = intent.ac_temp_c;
+      if (Object.hasOwn(intent, 'ac_mode')) cmd.ac_mode = intent.ac_mode;
+    }
     if (intent.fan_level !== undefined) cmd.fan_level = intent.fan_level;
     validate('command', JSON.stringify(cmd));
     this.commands.push({ command: cmd, started: this.now(), state: 'PENDING', late: false, acks: [] });

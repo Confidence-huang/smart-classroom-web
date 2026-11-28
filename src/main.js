@@ -660,12 +660,15 @@ const ctrlEls = {
   applyBtn: document.getElementById('ctrl-apply-btn'),
   autoBtn: document.getElementById('ctrl-auto-btn'),
   ecoOffBtn: document.getElementById('ctrl-eco-off-btn'),
+  acState: document.getElementById('ctrl-ac-state'),
+  acCoolBtn: document.getElementById('ctrl-ac-cool-btn'),
+  acHeatBtn: document.getElementById('ctrl-ac-heat-btn'),
   acTemp: document.getElementById('ctrl-ac-temp'),
   acOnBtn: document.getElementById('ctrl-ac-on-btn'),
   acOffBtn: document.getElementById('ctrl-ac-off-btn'),
   lastCmd: document.getElementById('ctrl-last-cmd'),
 }
-const ctrlState = { device: null, busy: false, apiBase: (import.meta.env.VITE_CONTROL_API_URL || '').trim().replace(/\/$/, '') }
+const ctrlState = { device: null, busy: false, acMode: 'COOL', apiBase: (import.meta.env.VITE_CONTROL_API_URL || '').trim().replace(/\/$/, '') }
 
 function renderControlPanel(view) {
   const devices = Array.isArray(view?.devices) ? view.devices : []
@@ -676,6 +679,9 @@ function renderControlPanel(view) {
     ctrlEls.pill.className = 'pill pill-idle'
     ctrlEls.status.textContent = '控制服务已连接，等待设备上线遥测。'
     ctrlEls.applyBtn.disabled = ctrlEls.autoBtn.disabled = ctrlEls.acOnBtn.disabled = ctrlEls.acOffBtn.disabled = true
+    if (ctrlEls.acCoolBtn) ctrlEls.acCoolBtn.disabled = true
+    if (ctrlEls.acHeatBtn) ctrlEls.acHeatBtn.disabled = true
+    if (ctrlEls.acState) { ctrlEls.acState.textContent = '未上报'; ctrlEls.acState.className = 'pill pill-idle' }
     if (ctrlEls.ecoOffBtn) ctrlEls.ecoOffBtn.disabled = true
     renderLcdMirror(null)
     refreshEcoDiagnostics()
@@ -689,7 +695,23 @@ function renderControlPanel(view) {
   ctrlEls.applyBtn.disabled = ctrlEls.autoBtn.disabled = ctrlState.busy || !online
   if (ctrlEls.ecoOffBtn) ctrlEls.ecoOffBtn.disabled = ctrlState.busy || !online
   const acReady = Boolean(dev.ac_control_available)
+  const acModeReady = Boolean(dev.ac_mode_available)
   ctrlEls.acOnBtn.disabled = ctrlEls.acOffBtn.disabled = ctrlState.busy || !online || !acReady
+  if (ctrlEls.acCoolBtn) ctrlEls.acCoolBtn.disabled = ctrlState.busy || !online || !acModeReady
+  if (ctrlEls.acHeatBtn) ctrlEls.acHeatBtn.disabled = ctrlState.busy || !online || !acModeReady
+  if (t.ac_mode === 'COOL' || t.ac_mode === 'HEAT') ctrlState.acMode = t.ac_mode
+  if (ctrlEls.acState) {
+    if (t.ac_mode && t.ac_temp_c != null) {
+      const modeZh = t.ac_mode === 'HEAT' ? '制热' : '制冷'
+      ctrlEls.acState.textContent = t.ac_on ? `${modeZh} · ${t.ac_temp_c}°C` : `已关机（${modeZh} · ${t.ac_temp_c}°C）`
+      ctrlEls.acState.className = `pill ${t.ac_on ? 'pill-live' : 'pill-idle'}`
+    } else {
+      ctrlEls.acState.textContent = acReady ? '已就绪' : '未上报'
+      ctrlEls.acState.className = 'pill pill-idle'
+    }
+  }
+  ctrlEls.acCoolBtn?.classList.toggle('active', ctrlState.acMode === 'COOL')
+  ctrlEls.acHeatBtn?.classList.toggle('active', ctrlState.acMode === 'HEAT')
   if (!acReady && online) ctrlEls.status.textContent += '（当前固件未上报模拟空调能力）'
   renderLcdMirror(t)
   refreshEcoDiagnostics()
@@ -775,9 +797,18 @@ if (ctrlEls.applyBtn) {
   ctrlEls.autoBtn.addEventListener('click', () => sendControlIntent({ mode: 'AUTO' }))
   ctrlEls.acOnBtn.addEventListener('click', () => {
     const temp = Math.min(30, Math.max(16, Number(ctrlEls.acTemp.value) || 26))
-    sendControlIntent({ ac_temp_c: temp })
+    const intent = ctrlState.device?.ac_mode_available ? { ac_temp_c: temp, ac_mode: ctrlState.acMode } : { ac_temp_c: temp }
+    sendControlIntent(intent)
   })
   ctrlEls.acOffBtn.addEventListener('click', () => sendControlIntent({ ac_temp_c: 0 }))
+  ctrlEls.acCoolBtn?.addEventListener('click', () => {
+    ctrlState.acMode = 'COOL'
+    sendControlIntent({ ac_mode: 'COOL' })
+  })
+  ctrlEls.acHeatBtn?.addEventListener('click', () => {
+    ctrlState.acMode = 'HEAT'
+    sendControlIntent({ ac_mode: 'HEAT' })
+  })
   refreshControlState()
   setInterval(refreshControlState, 3_000)
 }
