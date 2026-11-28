@@ -6,7 +6,7 @@
 import mqtt from 'mqtt'              // 浏览器经 WSS 使用 MQTT，不依赖电脑串口。
 import { publicApiBase } from './public-api.js' // 使用部署配置选择只读 API。
 import { newerTelemetryTimestamp } from './telemetry-time.js' // 两个接收入口使用同一时间校验。
-import { evaluateEcoStatus, summarizeEcoHistory } from './eco-diagnostics.js' // 纯前端节能策略诊断。
+import { evaluateEcoStatus, summarizeEcoHistory, TREND_THRESHOLDS } from './eco-diagnostics.js' // 纯前端节能策略诊断。
 import './style.css'                 // 看板在电脑和手机上共用同一套布局。
 
 // --- 页面数据 ---
@@ -677,6 +677,7 @@ function renderControlPanel(view) {
     ctrlEls.status.textContent = '控制服务已连接，等待设备上线遥测。'
     ctrlEls.applyBtn.disabled = ctrlEls.autoBtn.disabled = ctrlEls.acOnBtn.disabled = ctrlEls.acOffBtn.disabled = true
     if (ctrlEls.ecoOffBtn) ctrlEls.ecoOffBtn.disabled = true
+    renderLcdMirror(null)
     refreshEcoDiagnostics()
     return
   }
@@ -690,6 +691,7 @@ function renderControlPanel(view) {
   const acReady = Boolean(dev.ac_control_available)
   ctrlEls.acOnBtn.disabled = ctrlEls.acOffBtn.disabled = ctrlState.busy || !online || !acReady
   if (!acReady && online) ctrlEls.status.textContent += '（当前固件未上报模拟空调能力）'
+  renderLcdMirror(t)
   refreshEcoDiagnostics()
 
   // 当通过同源 ECS 控制服务访问时，把最新遥测同步到顶部实时卡片
@@ -928,12 +930,61 @@ function renderTrendChart() {
 
   svg.replaceChildren(defs, area, line, dot)
 
+  // 叠加固件同频节能门限参考线（仅当门限落在当前可见刻度区间内时绘制）
+  const thresholds = TREND_THRESHOLDS[trendState.metric] || []
+  for (const th of thresholds) {
+    if (th.value < minVal || th.value > maxVal) continue
+    const y = Number((H - padY - ((th.value - minVal) / span) * (H - padY * 2)).toFixed(1))
+    const refLine = document.createElementNS(ns, 'line')
+    refLine.setAttribute('x1', String(padX))
+    refLine.setAttribute('x2', String(W - padX))
+    refLine.setAttribute('y1', String(y))
+    refLine.setAttribute('y2', String(y))
+    refLine.setAttribute('stroke', th.color)
+    refLine.setAttribute('stroke-width', '1')
+    refLine.setAttribute('stroke-dasharray', '4 4')
+    refLine.setAttribute('opacity', '0.7')
+
+    const refText = document.createElementNS(ns, 'text')
+    refText.setAttribute('x', String(W - padX - 4))
+    refText.setAttribute('y', String(Math.max(12, y - 5)))
+    refText.setAttribute('text-anchor', 'end')
+    refText.setAttribute('fill', th.color)
+    refText.setAttribute('font-size', '12')
+    refText.setAttribute('font-family', 'JetBrains Mono, Consolas, monospace')
+    refText.textContent = th.label
+    svg.append(refLine, refText)
+  }
+
   const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)
   const ecoSum = summarizeEcoHistory(trendState.samples)
   const ecoText = ecoSum
     ? ` ｜ 无人待机 ${ecoSum.unoccupiedCount}/${ecoSum.total} 条 · 自然光达标(≥300lx) ${ecoSum.daylightCount}/${ecoSum.total} 条`
     : ''
   summaryEl.textContent = `${meta.label} · 样本 ${points.length} 条 · 最低 ${minVal}${meta.unit} · 最高 ${maxVal}${meta.unit} · 均值 ${avg}${meta.unit}${ecoText}`
+}
+
+function renderLcdMirror(t) {
+  const modeEl = document.getElementById('lcd-badge-mode')
+  const fanEl = document.getElementById('lcd-badge-fan')
+  const ledEl = document.getElementById('lcd-badge-led')
+  if (!modeEl || !fanEl || !ledEl) return
+  if (!t) {
+    modeEl.textContent = 'MODE: —'
+    modeEl.className = 'lcd-badge'
+    fanEl.textContent = 'FAN: —'
+    ledEl.textContent = 'LED: —'
+    return
+  }
+  const mode = t.mode || '—'
+  modeEl.textContent = `MODE: ${mode}`
+  modeEl.className = `lcd-badge ${mode === 'LOCAL_OFF' ? 'lcd-badge-error' : mode === 'AUTO' ? 'lcd-badge-live' : ''}`.trim()
+  const fanLvl = t.fan_out ? (t.fan_level ?? 1) : 0
+  fanEl.textContent = `F:${fanLvl}`
+  fanEl.className = `lcd-badge ${fanLvl > 0 ? 'lcd-badge-live' : ''}`.trim()
+  const ledState = t.led_out ? 1 : 0
+  ledEl.textContent = `L:${ledState}`
+  ledEl.className = `lcd-badge ${ledState ? 'lcd-badge-live' : ''}`.trim()
 }
 
 function refreshEcoDiagnostics(latestTelemetry = null) {

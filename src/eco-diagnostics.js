@@ -1,22 +1,41 @@
 /**
- * 纯前端节能运行状态与历史样本诊断（仅基于真实遥测与设备控制状态，不虚构能耗数值）。
+ * 纯前端节能运行状态与历史样本诊断（与 STM32 control_policy 门限对齐，不虚构能耗数值）。
  */
+
+export const TREND_THRESHOLDS = {
+  temp: [{ value: 29, label: '29°C 空调启动', color: '#b45309' }],
+  light: [
+    { value: 300, label: '300lx 节能关灯', color: '#047857' },
+    { value: 150, label: '150lx 补光开启', color: '#0369a1' },
+  ],
+}
 
 export function evaluateEcoStatus({ telemetry, controlDevice } = {}) {
   if (!telemetry && !controlDevice?.telemetry) {
     return {
       tone: 'idle',
       label: '节能策略待机',
-      detail: '接入实时遥测后自动评估空场待机与自然光状态。',
+      detail: '接入实时遥测后自动评估空场待机、IAQ 通风与自然光状态。',
     }
   }
 
   const t = controlDevice?.telemetry || {}
   const people = telemetry?.people_count ?? (t.vision_valid ? t.count : null)
   const lux = telemetry?.light_lux ?? null
+  const temp = telemetry?.temperature_c ?? (t.temp_valid ? t.temp_c : null)
+  const eco2 = telemetry?.eco2_ppm ?? null
+  const tvoc = telemetry?.tvoc_ppb ?? null
   const fanOn = Boolean(t.fan_out)
   const ledOn = Boolean(t.led_out)
   const mode = t.mode || null
+
+  if (mode === 'LOCAL_OFF') {
+    return {
+      tone: 'error',
+      label: '本地急停锁定',
+      detail: '板端 B1 急停锁已触发（LOCAL_OFF），云端控制暂时锁定。',
+    }
+  }
 
   if (people === 0 && (fanOn || ledOn)) {
     const active = [fanOn ? '风扇' : null, ledOn ? '灯环' : null].filter(Boolean).join('与')
@@ -37,6 +56,22 @@ export function evaluateEcoStatus({ telemetry, controlDevice } = {}) {
     }
   }
 
+  if ((eco2 != null && Number(eco2) >= 1200) || (tvoc != null && Number(tvoc) >= 400)) {
+    return {
+      tone: 'warn',
+      label: mode === 'AUTO' ? 'IAQ 自动通风中' : '空气质量预警',
+      detail: `eCO₂ ${eco2 ?? '—'} ppm / TVOC ${tvoc ?? '—'} ppb 触发通风门限（≥1200 / ≥400）。`,
+    }
+  }
+
+  if (temp != null && Number(temp) >= 30) {
+    return {
+      tone: 'warn',
+      label: '高温强力散热',
+      detail: `当前室温 ${temp} °C（≥30°C），AUTO 策略将提升风扇至高档并触发空调降温。`,
+    }
+  }
+
   if (lux != null && Number(lux) >= 300 && ledOn) {
     return {
       tone: 'warn',
@@ -49,7 +84,7 @@ export function evaluateEcoStatus({ telemetry, controlDevice } = {}) {
     return {
       tone: 'live',
       label: 'AUTO 策略护航',
-      detail: '设备正按人数、温湿度与照度门限自动调节负载。',
+      detail: '设备正按人数、温湿度、IAQ 与照度门限自动调节负载。',
     }
   }
 

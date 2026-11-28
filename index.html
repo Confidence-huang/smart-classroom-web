@@ -241,6 +241,13 @@
               </div>
               <p id="ctrl-status-line" class="panel-note">正在连接设备控制服务…</p>
 
+              <!-- 与实板 LCD 底部状态栏同构（AUTO/REM/LOCK · F:0..5 · L:0/1） -->
+              <div class="lcd-mirror-bar" aria-label="板端状态镜像">
+                <span id="lcd-badge-mode" class="lcd-badge">MODE: —</span>
+                <span id="lcd-badge-fan" class="lcd-badge">FAN: —</span>
+                <span id="lcd-badge-led" class="lcd-badge">LED: —</span>
+              </div>
+
               <div class="ctrl-section">
                 <div class="ctrl-section-head">
                   <h3>风扇与灯环</h3>

@@ -408,6 +408,34 @@ select:focus-visible {
   color: #064e3b;
 }
 
+.lcd-mirror-bar {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lcd-badge {
+  font-family: "JetBrains Mono", Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.lcd-badge-live {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.lcd-badge-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 /* 右侧明亮玻璃态 Canvas 空间波场卡片 */
 .hero-visual {
   position: relative;
