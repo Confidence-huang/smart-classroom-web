@@ -4,17 +4,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#eef4f0" />
+    <meta name="theme-color" content="#060a09" />
     <meta name="description" content="移远杯智慧教室 4G 实时数据看板" />
-    <title>智慧教室 · 实时控制台</title>
+    <title>智慧教室 · EcoVision AIoT</title>
   </head>
   <body>
+    <!-- 环境光晕背景层 -->
+    <div class="ambient-canvas" aria-hidden="true">
+      <div class="ambient-orb orb-emerald"></div>
+      <div class="ambient-orb orb-cyan"></div>
+      <div class="ambient-grid"></div>
+    </div>
+
     <div class="page-shell">
       <header class="topbar">
         <div class="brand">
           <span class="brand-mark" aria-hidden="true">Q<span>·</span></span>
           <div class="brand-text">
-            <strong>智慧教室</strong>
+            <strong>EcoVision · 智慧教室</strong>
             <span class="brand-sub">CLASSROOM 01 · AIoT LIVE</span>
           </div>
         </div>
@@ -28,29 +35,54 @@
             <span aria-hidden="true">?</span>
             <span class="topbar-btn-text">链路说明</span>
           </button>
-          <span class="edition">移远杯 · 联调版</span>
+          <span class="edition">移远杯 · 2026</span>
         </div>
       </header>
 
       <main class="dashboard-main">
-        <!-- 紧凑状态条：替代原占地巨大的宣传 Hero -->
-        <section class="status-strip" aria-labelledby="room-title">
-          <div class="status-strip-left">
-            <h1 id="room-title">教室实时状态</h1>
-            <div class="receipt-inline" aria-live="polite" aria-label="网页消息接收状态">
-              <span id="receipt-label" class="receipt-label">最近消息</span>
-              <strong id="latest-message">尚未收到新消息</strong>
-              <span id="latest-message-time" class="receipt-time">等待上报</span>
+        <!-- 沉浸式叙事首屏（滚动驱动景深与尺度交接） -->
+        <section id="hero-stage" class="hero-stage" aria-labelledby="room-title">
+          <div class="hero-depth-layer">
+            <div class="hero-copy">
+              <p class="hero-kicker">4G CAT.1 · EDGE VISION · CLOUD CONTROL</p>
+              <h1 id="room-title" class="hero-title">
+                感知教室的<br />
+                <span class="hero-gradient-text">每一次呼吸。</span>
+              </h1>
+              <p class="hero-lead">
+                K230 边缘视觉、AHT20 / BH1750 / SGP30 多维传感与 EC200U 4G 链路实时共振，
+                在同一座玻璃态控制台上完成观测、趋势推演与硬件闭环。
+              </p>
+              <div class="hero-meta-row">
+                <div class="receipt-inline" aria-live="polite" aria-label="网页消息接收状态">
+                  <span id="receipt-label" class="receipt-label">最近消息</span>
+                  <strong id="latest-message">尚未收到新消息</strong>
+                  <span id="latest-message-time" class="receipt-time">等待上报</span>
+                </div>
+                <div class="freshness-cluster">
+                  <span id="data-pill" class="pill pill-idle">等待真实数据</span>
+                  <span id="last-updated" class="freshness-time">暂无采集时间</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="status-strip-right">
-            <span id="data-pill" class="pill pill-idle">等待真实数据</span>
-            <span id="last-updated" class="freshness-time">暂无采集时间</span>
+
+            <!-- 视觉焦点：动态遥测核心环（随滚动产生景深缩放与旋转） -->
+            <div class="hero-visual" aria-hidden="true">
+              <div class="telemetry-core">
+                <div class="core-ring ring-outer"></div>
+                <div class="core-ring ring-mid"></div>
+                <div class="core-ring ring-inner"></div>
+                <div class="core-center">
+                  <span class="core-label">ECOVISION</span>
+                  <strong class="core-status">LIVE</strong>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <!-- 6 项核心遥测指标 -->
-        <section class="readings" aria-label="实时测量值">
+        <!-- Bento 遥测矩阵：6 项核心指标 -->
+        <section class="readings reveal-block" aria-label="实时测量值">
           <article class="reading reading-people">
             <div class="reading-top">
               <span>识别人数</span>
@@ -124,14 +156,13 @@
           </article>
         </section>
 
-        <!-- 主工作区：左趋势与流水 / 右硬件控制与 AI 助手 -->
+        <!-- 主工作区 Bento 双栏：左趋势与流水 / 右硬件控制与 AI 助手 -->
         <div class="workspace-grid">
           <div class="workspace-main">
-            <!-- 实时趋势图 -->
-            <section class="surface-panel trend-panel" aria-labelledby="trend-title">
+            <section class="glass-panel trend-panel reveal-block" aria-labelledby="trend-title">
               <div class="panel-head">
                 <div>
-                  <span class="panel-kicker">TREND</span>
+                  <span class="panel-kicker">TELEMETRY STREAM</span>
                   <h2 id="trend-title">近期变化趋势</h2>
                 </div>
                 <div class="segmented-tabs" role="tablist" aria-label="趋势指标切换">
@@ -142,28 +173,25 @@
                 </div>
               </div>
               <div id="trend-chart-wrap" class="trend-chart-wrap">
-                <svg id="trend-svg" class="trend-svg" viewBox="0 0 640 180" preserveAspectRatio="none" aria-label="遥测趋势曲线"></svg>
-                <div id="trend-empty" class="trend-empty">连接并收到至少 2 条历史样本后自动绘制变化曲线。</div>
+                <svg id="trend-svg" class="trend-svg" viewBox="0 0 640 190" preserveAspectRatio="none" aria-label="遥测趋势曲线"></svg>
+                <div id="trend-empty" class="trend-empty">连接并收到至少 2 条历史样本后自动绘制发光趋势曲线。</div>
               </div>
               <div id="trend-summary" class="trend-summary"></div>
             </section>
 
-            <!-- 统一消息与历史面板（合并原 3 处重复日志） -->
-            <section class="surface-panel logs-panel" aria-labelledby="logs-title">
+            <section class="glass-panel logs-panel reveal-block" aria-labelledby="logs-title">
               <div class="panel-head">
                 <div>
-                  <span class="panel-kicker">TELEMETRY LOG</span>
+                  <span class="panel-kicker">EVENT &amp; ARCHIVE</span>
                   <h2 id="logs-title">遥测流水与历史</h2>
                 </div>
-                <div class="logs-head-right">
-                  <div class="segmented-tabs" role="tablist" aria-label="日志视图切换">
-                    <button id="tab-btn-live" class="seg-tab active" type="button" data-log-tab="live">
-                      实时消息 <span id="message-count" class="tab-badge">0 条</span>
-                    </button>
-                    <button id="tab-btn-history" class="seg-tab" type="button" data-log-tab="history">
-                      已存历史 <span id="history-count" class="tab-badge">未连接</span>
-                    </button>
-                  </div>
+                <div class="segmented-tabs" role="tablist" aria-label="日志视图切换">
+                  <button id="tab-btn-live" class="seg-tab active" type="button" data-log-tab="live">
+                    实时消息 <span id="message-count" class="tab-badge">0 条</span>
+                  </button>
+                  <button id="tab-btn-history" class="seg-tab" type="button" data-log-tab="history">
+                    已存历史 <span id="history-count" class="tab-badge">未连接</span>
+                  </button>
                 </div>
               </div>
 
@@ -183,11 +211,10 @@
           </div>
 
           <aside class="workspace-side">
-            <!-- 硬件控制中心 -->
-            <section id="unified-control-panel" class="surface-panel control-panel" aria-labelledby="control-title">
+            <section id="unified-control-panel" class="glass-panel control-panel reveal-block" aria-labelledby="control-title">
               <div class="panel-head">
                 <div>
-                  <span class="panel-kicker">DEVICE CONTROL</span>
+                  <span class="panel-kicker">COMMAND UPLINK</span>
                   <h2 id="control-title">硬件控制中心</h2>
                 </div>
                 <span id="ctrl-conn-pill" class="pill pill-idle">检测中</span>
@@ -261,8 +288,7 @@
               <p id="ctrl-last-cmd" class="ctrl-receipt">最近控制回执：暂无</p>
             </section>
 
-            <!-- AI 助手入口卡片 -->
-            <section class="anda-entry-section" aria-label="AI 助手入口">
+            <section class="anda-entry-section reveal-block" aria-label="AI 助手入口">
               <button id="open-agent-drawer" class="anda-entry-card" type="button">
                 <div class="anda-entry-left">
                   <span class="anda-entry-icon" aria-hidden="true">✨</span>
@@ -282,15 +308,44 @@
             </section>
           </aside>
         </div>
+
+        <!-- 叙事收束：硬件链路全景条 -->
+        <section class="glass-panel pipeline-band reveal-block" aria-label="当前数据链路">
+          <div class="pipeline-head">
+            <span class="panel-kicker">SIGNAL TOPOLOGY</span>
+            <h2>端边云协同链路</h2>
+          </div>
+          <div class="flow-steps">
+            <div class="flow-node">
+              <span class="flow-idx">01</span>
+              <span class="flow-step">AHT20 / BH1750 / SGP30 <small>温湿度、照度与空气采集</small></span>
+            </div>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <div class="flow-node">
+              <span class="flow-idx">02</span>
+              <span class="flow-step">STM32 + EC200U <small>4G Cat.1 上报</small></span>
+            </div>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <div class="flow-node">
+              <span class="flow-idx">03</span>
+              <span id="flow-broker" class="flow-step">EMQX <small>MQTT 转发</small></span>
+            </div>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <div class="flow-node">
+              <span class="flow-idx">04</span>
+              <span id="flow-browser" class="flow-step">当前网页 <small>实时订阅</small></span>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer class="site-footer">
-        <span>移远杯 · 智慧教室系统</span>
-        <span>实时展示与远程控制控制台</span>
+        <span>移远杯 · EcoVision 智慧教室系统</span>
+        <span>4G 实时遥测与云端控制控制台</span>
       </footer>
     </div>
 
-    <!-- 系统架构与联调说明弹窗（从主屏降级收纳） -->
+    <!-- 系统架构与联调说明弹窗 -->
     <dialog id="system-info-dialog" class="settings-dialog info-dialog" aria-labelledby="system-info-title">
       <div class="info-dialog-inner">
         <div class="dialog-head">
@@ -314,24 +369,11 @@
           </div>
         </div>
 
-        <section class="flow" aria-label="当前数据链路">
-          <span class="flow-title">数据从哪里来</span>
-          <div class="flow-steps">
-            <span class="flow-step">AHT20 / BH1750 / SGP30 <small>温湿度、照度与空气采集</small></span>
-            <span class="flow-arrow" aria-hidden="true">→</span>
-            <span class="flow-step">STM32 + EC200U <small>4G 上报</small></span>
-            <span class="flow-arrow" aria-hidden="true">→</span>
-            <span id="flow-broker" class="flow-step">EMQX <small>MQTT 转发</small></span>
-            <span class="flow-arrow" aria-hidden="true">→</span>
-            <span id="flow-browser" class="flow-step">当前网页 <small>实时订阅</small></span>
-          </div>
-        </section>
-
         <p class="data-note">说明：环境光照已对齐 LCD 改用外接 BH1750 照度传感器（单位 lx）；若设备仅上报旧版板载 ADC 原码则自动兼容显示 ADC；K230 未接入时人数显示“—”。历史记录来自独立接收服务；未部署该服务时公开网站只显示 MQTT 最新消息。</p>
       </div>
     </dialog>
 
-    <!-- 安大+ 风格沉浸式 AI 助手（全屏抽屉视图） -->
+    <!-- 沉浸式 AI 助手（全屏抽屉视图） -->
     <div id="anda-agent-drawer" class="anda-drawer" hidden aria-hidden="true" role="dialog" aria-label="智慧教室 AI 助手">
       <div id="anda-drawer-backdrop" class="anda-drawer-backdrop"></div>
       <div class="anda-drawer-window">

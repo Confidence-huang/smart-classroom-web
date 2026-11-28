@@ -890,11 +890,11 @@ function renderTrendChart() {
   grad.setAttribute('y2', '1')
   const s1 = document.createElementNS(ns, 'stop')
   s1.setAttribute('offset', '0%')
-  s1.setAttribute('stop-color', '#115e4b')
-  s1.setAttribute('stop-opacity', '0.24')
+  s1.setAttribute('stop-color', '#34d399')
+  s1.setAttribute('stop-opacity', '0.32')
   const s2 = document.createElementNS(ns, 'stop')
   s2.setAttribute('offset', '100%')
-  s2.setAttribute('stop-color', '#115e4b')
+  s2.setAttribute('stop-color', '#34d399')
   s2.setAttribute('stop-opacity', '0.02')
   grad.append(s1, s2)
   defs.append(grad)
@@ -906,7 +906,7 @@ function renderTrendChart() {
   const line = document.createElementNS(ns, 'path')
   line.setAttribute('d', lineD)
   line.setAttribute('fill', 'none')
-  line.setAttribute('stroke', '#115e4b')
+  line.setAttribute('stroke', '#34d399')
   line.setAttribute('stroke-width', '2.5')
   line.setAttribute('stroke-linecap', 'round')
   line.setAttribute('stroke-linejoin', 'round')
@@ -916,8 +916,8 @@ function renderTrendChart() {
   dot.setAttribute('cx', String(last[0]))
   dot.setAttribute('cy', String(last[1]))
   dot.setAttribute('r', '4.5')
-  dot.setAttribute('fill', '#115e4b')
-  dot.setAttribute('stroke', '#ffffff')
+  dot.setAttribute('fill', '#34d399')
+  dot.setAttribute('stroke', '#060a09')
   dot.setAttribute('stroke-width', '2')
 
   svg.replaceChildren(defs, area, line, dot)
@@ -939,5 +939,48 @@ for (const btn of document.querySelectorAll('[data-trend-metric]')) {
       b.classList.toggle('active', b === btn)
     }
     renderTrendChart()
+  })
+}
+
+// 滚动驱动景深进度 + 单向入场 + Bento 光斑微交互
+const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const revealBlocks = document.querySelectorAll('.reveal-block')
+if (reduceMotion || typeof IntersectionObserver === 'undefined') {
+  for (const el of revealBlocks) el.classList.add('is-visible')
+} else {
+  const io = new IntersectionObserver(
+    entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible')
+          io.unobserve(entry.target)
+        }
+      }
+    },
+    { threshold: 0.05 }
+  )
+  for (const el of revealBlocks) io.observe(el)
+
+  let scrollTick = false
+  const updateScrollProgress = () => {
+    scrollTick = false
+    const maxScroll = Math.max(360, window.innerHeight * 0.65)
+    const p = Math.min(1, Math.max(0, window.scrollY / maxScroll))
+    document.documentElement.style.setProperty('--scroll-p', p.toFixed(4))
+  }
+  window.addEventListener('scroll', () => {
+    if (!scrollTick) {
+      scrollTick = true
+      requestAnimationFrame(updateScrollProgress)
+    }
+  }, { passive: true })
+  updateScrollProgress()
+}
+
+for (const card of document.querySelectorAll('.reading')) {
+  card.addEventListener('pointermove', e => {
+    const rect = card.getBoundingClientRect()
+    card.style.setProperty('--mx', `${e.clientX - rect.left}px`)
+    card.style.setProperty('--my', `${e.clientY - rect.top}px`)
   })
 }
