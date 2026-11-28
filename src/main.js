@@ -6,6 +6,7 @@
 import mqtt from 'mqtt'              // 浏览器经 WSS 使用 MQTT，不依赖电脑串口。
 import { publicApiBase } from './public-api.js' // 使用部署配置选择只读 API。
 import { newerTelemetryTimestamp } from './telemetry-time.js' // 两个接收入口使用同一时间校验。
+import { evaluateEcoStatus, summarizeEcoHistory, TREND_THRESHOLDS } from './eco-diagnostics.js' // 纯前端节能策略诊断。
 import './style.css'                 // 看板在电脑和手机上共用同一套布局。
 
 // --- 页面数据 ---
@@ -167,6 +168,7 @@ async function refreshHistory() {
       item.append(time, `${people} · ${row.temperature_c} °C · ${row.humidity_pct}% · ${light}${air}`)
       elements['history-list'].append(item)     // textContent 路径，不执行云端载荷中的 HTML。
     }
+    if (typeof updateTrendSamples === 'function') updateTrendSamples(data.history)
     if (data.latest) showTelemetry(data.latest, data.latest.received_at)
     if (apiDriven && data.latest) {
       elements['latest-message'].textContent = `${data.latest.simulated ? '模拟样本' : '设备遥测'} #${data.latest.seq}`
@@ -657,6 +659,7 @@ const ctrlEls = {
   led: document.getElementById('ctrl-led-out'),
   applyBtn: document.getElementById('ctrl-apply-btn'),
   autoBtn: document.getElementById('ctrl-auto-btn'),
+  ecoOffBtn: document.getElementById('ctrl-eco-off-btn'),
   acTemp: document.getElementById('ctrl-ac-temp'),
   acOnBtn: document.getElementById('ctrl-ac-on-btn'),
   acOffBtn: document.getElementById('ctrl-ac-off-btn'),
@@ -673,6 +676,9 @@ function renderControlPanel(view) {
     ctrlEls.pill.className = 'pill pill-idle'
     ctrlEls.status.textContent = '控制服务已连接，等待设备上线遥测。'
     ctrlEls.applyBtn.disabled = ctrlEls.autoBtn.disabled = ctrlEls.acOnBtn.disabled = ctrlEls.acOffBtn.disabled = true
+    if (ctrlEls.ecoOffBtn) ctrlEls.ecoOffBtn.disabled = true
+    renderLcdMirror(null)
+    refreshEcoDiagnostics()
     return
   }
   const t = dev.telemetry || {}
@@ -681,9 +687,12 @@ function renderControlPanel(view) {
   ctrlEls.pill.className = `pill ${online ? 'pill-live' : 'pill-warn'}`
   ctrlEls.status.textContent = `${dev.device_id} · 模式 ${t.mode || '—'} · 风扇 ${t.fan_out ? (t.fan_level ?? 1) + ' 档' : '关闭'} · 灯环 ${t.led_out ? '亮' : '灭'}`
   ctrlEls.applyBtn.disabled = ctrlEls.autoBtn.disabled = ctrlState.busy || !online
+  if (ctrlEls.ecoOffBtn) ctrlEls.ecoOffBtn.disabled = ctrlState.busy || !online
   const acReady = Boolean(dev.ac_control_available)
   ctrlEls.acOnBtn.disabled = ctrlEls.acOffBtn.disabled = ctrlState.busy || !online || !acReady
   if (!acReady && online) ctrlEls.status.textContent += '（当前固件未上报模拟空调能力）'
+  renderLcdMirror(t)
+  refreshEcoDiagnostics()
 
   // 当通过同源 ECS 控制服务访问时，把最新遥测同步到顶部实时卡片
   if (t.seq != null && (ecsSite || !publicApiMode)) {
@@ -771,4 +780,334 @@ if (ctrlEls.applyBtn) {
   ctrlEls.acOffBtn.addEventListener('click', () => sendControlIntent({ ac_temp_c: 0 }))
   refreshControlState()
   setInterval(refreshControlState, 3_000)
+}
+
+// --- 控制台 UI 交互增强：链路弹窗、日志切换、硬件快捷按钮、SVG 趋势图 ---
+const infoDialog = document.getElementById('system-info-dialog')
+document.getElementById('system-info-btn')?.addEventListener('click', () => infoDialog?.showModal())
+document.getElementById('close-system-info')?.addEventListener('click', () => infoDialog?.close())
+infoDialog?.addEventListener('click', e => {
+  if (e.target === infoDialog) infoDialog.close()
+})
+
+for (const tabBtn of document.querySelectorAll('[data-log-tab]')) {
+  tabBtn.addEventListener('click', () => {
+    const target = tabBtn.dataset.logTab
+    for (const b of document.querySelectorAll('[data-log-tab]')) {
+      b.classList.toggle('active', b === tabBtn)
+    }
+    const livePane = document.getElementById('log-pane-live')
+    const histPane = document.getElementById('log-pane-history')
+    if (livePane) livePane.hidden = target !== 'live'
+    if (histPane) histPane.hidden = target !== 'history'
+  })
+}
+
+// 风扇档位、灯环、空调温度步进器与底层表单控件双向同步
+function syncControlPills() {
+  const fanVal = ctrlEls.fan?.value ?? '0'
+  for (const btn of document.querySelectorAll('[data-fan-val]')) {
+    btn.classList.toggle('active', btn.dataset.fanVal === fanVal)
+  }
+  const ledVal = ctrlEls.led?.value ?? '0'
+  for (const btn of document.querySelectorAll('[data-led-val]')) {
+    btn.classList.toggle('active', btn.dataset.ledVal === ledVal)
+  }
+}
+
+for (const btn of document.querySelectorAll('[data-fan-val]')) {
+  btn.addEventListener('click', () => {
+    if (ctrlEls.fan) ctrlEls.fan.value = btn.dataset.fanVal
+    syncControlPills()
+  })
+}
+
+for (const btn of document.querySelectorAll('[data-led-val]')) {
+  btn.addEventListener('click', () => {
+    if (ctrlEls.led) ctrlEls.led.value = btn.dataset.ledVal
+    syncControlPills()
+  })
+}
+
+document.getElementById('ac-temp-minus')?.addEventListener('click', () => {
+  if (!ctrlEls.acTemp) return
+  const next = Math.max(16, (Number(ctrlEls.acTemp.value) || 26) - 1)
+  ctrlEls.acTemp.value = String(next)
+})
+
+document.getElementById('ac-temp-plus')?.addEventListener('click', () => {
+  if (!ctrlEls.acTemp) return
+  const next = Math.min(30, (Number(ctrlEls.acTemp.value) || 26) + 1)
+  ctrlEls.acTemp.value = String(next)
+})
+
+// 趋势图渲染（基于历史样本绘制轻量 SVG 折线面积图）
+const trendState = { metric: 'temp', samples: [] }
+const trendMeta = {
+  temp: { label: '温度', unit: '°C', extract: r => (r.temperature_c == null ? null : Number(r.temperature_c)) },
+  humidity: { label: '湿度', unit: '%', extract: r => (r.humidity_pct == null ? null : Number(r.humidity_pct)) },
+  light: { label: '光照', unit: 'lx', extract: r => (r.light_lux == null ? null : Number(r.light_lux)) },
+  people: { label: '人数', unit: '人', extract: r => (r.people_count == null ? null : Number(r.people_count)) },
+}
+
+function renderTrendChart() {
+  const svg = document.getElementById('trend-svg')
+  const emptyEl = document.getElementById('trend-empty')
+  const summaryEl = document.getElementById('trend-summary')
+  if (!svg || !emptyEl || !summaryEl) return
+
+  const meta = trendMeta[trendState.metric] || trendMeta.temp
+  const points = [...trendState.samples]
+    .reverse()
+    .map(r => ({ v: meta.extract(r), t: r.received_at }))
+    .filter(p => p.v != null && Number.isFinite(p.v))
+
+  if (points.length < 2) {
+    svg.replaceChildren()
+    emptyEl.hidden = false
+    summaryEl.textContent = ''
+    return
+  }
+
+  emptyEl.hidden = true
+  const vals = points.map(p => p.v)
+  const minVal = Math.min(...vals)
+  const maxVal = Math.max(...vals)
+  const span = maxVal - minVal || 1
+  const padX = 12
+  const padY = 18
+  const W = 640
+  const H = 180
+
+  const coords = points.map((p, idx) => {
+    const x = padX + (idx / (points.length - 1)) * (W - padX * 2)
+    const y = H - padY - ((p.v - minVal) / span) * (H - padY * 2)
+    return [Number(x.toFixed(1)), Number(y.toFixed(1))]
+  })
+
+  const lineD = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ')
+  const areaD = `${lineD} L${coords[coords.length - 1][0]},${H} L${coords[0][0]},${H} Z`
+
+  const ns = 'http://www.w3.org/2000/svg'
+  const defs = document.createElementNS(ns, 'defs')
+  const grad = document.createElementNS(ns, 'linearGradient')
+  grad.id = 'trendGrad'
+  grad.setAttribute('x1', '0')
+  grad.setAttribute('y1', '0')
+  grad.setAttribute('x2', '0')
+  grad.setAttribute('y2', '1')
+  const s1 = document.createElementNS(ns, 'stop')
+  s1.setAttribute('offset', '0%')
+  s1.setAttribute('stop-color', '#059669')
+  s1.setAttribute('stop-opacity', '0.28')
+  const s2 = document.createElementNS(ns, 'stop')
+  s2.setAttribute('offset', '100%')
+  s2.setAttribute('stop-color', '#0284c7')
+  s2.setAttribute('stop-opacity', '0.02')
+  grad.append(s1, s2)
+  defs.append(grad)
+
+  const area = document.createElementNS(ns, 'path')
+  area.setAttribute('d', areaD)
+  area.setAttribute('fill', 'url(#trendGrad)')
+
+  const line = document.createElementNS(ns, 'path')
+  line.setAttribute('d', lineD)
+  line.setAttribute('fill', 'none')
+  line.setAttribute('stroke', '#059669')
+  line.setAttribute('stroke-width', '2.4')
+  line.setAttribute('stroke-linecap', 'round')
+  line.setAttribute('stroke-linejoin', 'round')
+
+  const last = coords[coords.length - 1]
+  const dot = document.createElementNS(ns, 'circle')
+  dot.setAttribute('cx', String(last[0]))
+  dot.setAttribute('cy', String(last[1]))
+  dot.setAttribute('r', '4.5')
+  dot.setAttribute('fill', '#059669')
+  dot.setAttribute('stroke', '#ffffff')
+  dot.setAttribute('stroke-width', '2')
+
+  svg.replaceChildren(defs, area, line, dot)
+
+  // 叠加固件同频节能门限参考线（仅当门限落在当前可见刻度区间内时绘制）
+  const thresholds = TREND_THRESHOLDS[trendState.metric] || []
+  for (const th of thresholds) {
+    if (th.value < minVal || th.value > maxVal) continue
+    const y = Number((H - padY - ((th.value - minVal) / span) * (H - padY * 2)).toFixed(1))
+    const refLine = document.createElementNS(ns, 'line')
+    refLine.setAttribute('x1', String(padX))
+    refLine.setAttribute('x2', String(W - padX))
+    refLine.setAttribute('y1', String(y))
+    refLine.setAttribute('y2', String(y))
+    refLine.setAttribute('stroke', th.color)
+    refLine.setAttribute('stroke-width', '1')
+    refLine.setAttribute('stroke-dasharray', '4 4')
+    refLine.setAttribute('opacity', '0.7')
+
+    const refText = document.createElementNS(ns, 'text')
+    refText.setAttribute('x', String(W - padX - 4))
+    refText.setAttribute('y', String(Math.max(12, y - 5)))
+    refText.setAttribute('text-anchor', 'end')
+    refText.setAttribute('fill', th.color)
+    refText.setAttribute('font-size', '12')
+    refText.setAttribute('font-family', 'JetBrains Mono, Consolas, monospace')
+    refText.textContent = th.label
+    svg.append(refLine, refText)
+  }
+
+  const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)
+  const ecoSum = summarizeEcoHistory(trendState.samples)
+  const ecoText = ecoSum
+    ? ` ｜ 无人待机 ${ecoSum.unoccupiedCount}/${ecoSum.total} 条 · 自然光达标(≥300lx) ${ecoSum.daylightCount}/${ecoSum.total} 条`
+    : ''
+  summaryEl.textContent = `${meta.label} · 样本 ${points.length} 条 · 最低 ${minVal}${meta.unit} · 最高 ${maxVal}${meta.unit} · 均值 ${avg}${meta.unit}${ecoText}`
+}
+
+function renderLcdMirror(t) {
+  const modeEl = document.getElementById('lcd-badge-mode')
+  const fanEl = document.getElementById('lcd-badge-fan')
+  const ledEl = document.getElementById('lcd-badge-led')
+  if (!modeEl || !fanEl || !ledEl) return
+  if (!t) {
+    modeEl.textContent = 'MODE: —'
+    modeEl.className = 'lcd-badge'
+    fanEl.textContent = 'FAN: —'
+    ledEl.textContent = 'LED: —'
+    return
+  }
+  const mode = t.mode || '—'
+  modeEl.textContent = `MODE: ${mode}`
+  modeEl.className = `lcd-badge ${mode === 'LOCAL_OFF' ? 'lcd-badge-error' : mode === 'AUTO' ? 'lcd-badge-live' : ''}`.trim()
+  const fanLvl = t.fan_out ? (t.fan_level ?? 1) : 0
+  fanEl.textContent = `F:${fanLvl}`
+  fanEl.className = `lcd-badge ${fanLvl > 0 ? 'lcd-badge-live' : ''}`.trim()
+  const ledState = t.led_out ? 1 : 0
+  ledEl.textContent = `L:${ledState}`
+  ledEl.className = `lcd-badge ${ledState ? 'lcd-badge-live' : ''}`.trim()
+}
+
+function refreshEcoDiagnostics(latestTelemetry = null) {
+  const pill = document.getElementById('eco-status-pill')
+  const detail = document.getElementById('eco-status-detail')
+  if (!pill || !detail) return
+  if (latestTelemetry) trendState.latestTelemetry = latestTelemetry
+  const res = evaluateEcoStatus({
+    telemetry: trendState.latestTelemetry || trendState.samples[0] || null,
+    controlDevice: ctrlState.device,
+  })
+  pill.textContent = res.label
+  pill.className = `pill pill-${res.tone}`
+  detail.textContent = res.detail
+}
+
+ctrlEls.ecoOffBtn?.addEventListener('click', () => {
+  if (ctrlEls.fan) ctrlEls.fan.value = '0'
+  if (ctrlEls.led) ctrlEls.led.value = '0'
+  syncControlPills()
+  sendControlIntent({ mode: 'REMOTE', fan_out: 0, fan_level: 0, led_out: 0 })
+})
+
+function updateTrendSamples(historyRows) {
+  if (!Array.isArray(historyRows)) return
+  trendState.samples = historyRows.slice(0, 24)
+  renderTrendChart()
+  refreshEcoDiagnostics(trendState.samples[0] || null)
+}
+
+for (const btn of document.querySelectorAll('[data-trend-metric]')) {
+  btn.addEventListener('click', () => {
+    trendState.metric = btn.dataset.trendMetric || 'temp'
+    for (const b of document.querySelectorAll('[data-trend-metric]')) {
+      b.classList.toggle('active', b === btn)
+    }
+    renderTrendChart()
+  })
+}
+
+// 滚动驱动景深进度 + 单向入场 + Bento 光斑微交互
+const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const revealBlocks = document.querySelectorAll('.reveal-block')
+if (reduceMotion || typeof IntersectionObserver === 'undefined') {
+  for (const el of revealBlocks) el.classList.add('is-visible')
+} else {
+  const io = new IntersectionObserver(
+    entries => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible')
+          io.unobserve(entry.target)
+        }
+      }
+    },
+    { threshold: 0.05 }
+  )
+  for (const el of revealBlocks) io.observe(el)
+
+  let scrollTick = false
+  const updateScrollProgress = () => {
+    scrollTick = false
+    const maxScroll = Math.max(360, window.innerHeight * 0.65)
+    const p = Math.min(1, Math.max(0, window.scrollY / maxScroll))
+    document.documentElement.style.setProperty('--scroll-p', p.toFixed(4))
+  }
+  window.addEventListener('scroll', () => {
+    if (!scrollTick) {
+      scrollTick = true
+      requestAnimationFrame(updateScrollProgress)
+    }
+  }, { passive: true })
+  updateScrollProgress()
+}
+
+for (const card of document.querySelectorAll('.reading')) {
+  card.addEventListener('pointermove', e => {
+    const rect = card.getBoundingClientRect()
+    card.style.setProperty('--mx', `${e.clientX - rect.left}px`)
+    card.style.setProperty('--my', `${e.clientY - rect.top}px`)
+  })
+}
+
+// 3D 投影空间波场 Canvas（替代普通 CSS 虚线框，随滚动/鼠标轻微呼吸）
+const heroCanvas = document.getElementById('hero-canvas')
+if (heroCanvas) {
+  const ctx = heroCanvas.getContext('2d')
+  let phase = 0
+  let pointerTilt = 0
+  heroCanvas.addEventListener('pointermove', e => {
+    const r = heroCanvas.getBoundingClientRect()
+    pointerTilt = ((e.clientX - r.left) / r.width - 0.5) * 0.45
+  })
+  const drawField = () => {
+    if (!ctx) return
+    const w = heroCanvas.width
+    const h = heroCanvas.height
+    ctx.clearRect(0, 0, w, h)
+    const rows = 14
+    const cols = 22
+    const scrollP = Number(getComputedStyle(document.documentElement).getPropertyValue('--scroll-p')) || 0
+    for (let r = 0; r < rows; r++) {
+      const z = r / (rows - 1)
+      const yBase = 68 + z * 195
+      const alpha = 0.12 + (1 - z) * 0.45
+      ctx.beginPath()
+      for (let c = 0; c < cols; c++) {
+        const u = c / (cols - 1)
+        const x = 24 + u * (w - 48)
+        const wave = Math.sin(u * 5.2 + phase + r * 0.42 + scrollP * 3) * (10 + (1 - z) * 14)
+        const tilt = (u - 0.5) * pointerTilt * 28
+        const y = yBase + wave + tilt
+        if (c === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      }
+      ctx.strokeStyle = r % 3 === 0 ? `rgba(5, 150, 105, ${alpha * 1.15})` : `rgba(2, 132, 199, ${alpha * 0.72})`
+      ctx.lineWidth = r % 3 === 0 ? 1.8 : 1.1
+      ctx.stroke()
+    }
+    if (!reduceMotion) {
+      phase += 0.018
+      requestAnimationFrame(drawField)
+    }
+  }
+  drawField()
 }
