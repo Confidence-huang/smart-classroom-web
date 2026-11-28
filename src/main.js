@@ -169,7 +169,12 @@ async function refreshHistory() {
       elements['history-list'].append(item)     // textContent 路径，不执行云端载荷中的 HTML。
     }
     if (typeof updateTrendSamples === 'function') updateTrendSamples(data.history)
-    if (data.latest) showTelemetry(data.latest, data.latest.received_at)
+    if (data.latest) {
+      // SQLite returns 0/1 for air validity; the card also receives boolean MQTT snapshots.
+      const { air_valid, ...latest } = data.latest
+      const airValid = air_valid === 1 ? true : air_valid === 0 ? false : air_valid
+      showTelemetry({ ...latest, air_valid: airValid }, latest.received_at)
+    }
     if (apiDriven && data.latest) {
       elements['latest-message'].textContent = `${data.latest.simulated ? '模拟样本' : '设备遥测'} #${data.latest.seq}`
       elements['latest-message-time'].textContent = `云端入库 ${new Date(data.latest.received_at).toLocaleString('zh-CN')}`
