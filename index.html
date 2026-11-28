@@ -4,157 +4,337 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#e9f1ee" />
+    <meta name="theme-color" content="#eef4f0" />
     <meta name="description" content="移远杯智慧教室 4G 实时数据看板" />
-    <title>智慧教室 · 实时看板</title>
+    <title>智慧教室 · 实时控制台</title>
   </head>
   <body>
     <div class="page-shell">
       <header class="topbar">
-        <div class="brand"><span class="brand-mark">Q<span>·</span></span><span>智慧教室 <small>AIoT LIVE</small></span></div>
-        <span class="edition">移远杯 · 联调版</span>
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">Q<span>·</span></span>
+          <div class="brand-text">
+            <strong>智慧教室</strong>
+            <span class="brand-sub">CLASSROOM 01 · AIoT LIVE</span>
+          </div>
+        </div>
+
+        <div class="topbar-actions">
+          <button id="settings-button" class="topbar-conn-btn" type="button" title="设置云端连接">
+            <span id="broker-pill" class="pill pill-idle">未连接</span>
+            <span class="topbar-conn-label">连接设置</span>
+          </button>
+          <button id="system-info-btn" class="topbar-icon-btn" type="button" aria-label="系统架构与联调说明" title="系统架构与联调说明">
+            <span aria-hidden="true">?</span>
+            <span class="topbar-btn-text">链路说明</span>
+          </button>
+          <span class="edition">移远杯 · 联调版</span>
+        </div>
       </header>
 
-      <main>
-        <section class="intro" aria-labelledby="page-title">
-          <div>
-            <p class="eyebrow">4G → 云端 → 手机</p>
-            <h1 id="page-title">看见教室的<br /><em>每一次变化。</em></h1>
-            <p class="intro-copy">这里展示设备上报的实时数据。尚未接入的项目会明确显示“等待数据”，测试消息不会冒充传感器读数。</p>
+      <main class="dashboard-main">
+        <!-- 紧凑状态条：替代原占地巨大的宣传 Hero -->
+        <section class="status-strip" aria-labelledby="room-title">
+          <div class="status-strip-left">
+            <h1 id="room-title">教室实时状态</h1>
+            <div class="receipt-inline" aria-live="polite" aria-label="网页消息接收状态">
+              <span id="receipt-label" class="receipt-label">最近消息</span>
+              <strong id="latest-message">尚未收到新消息</strong>
+              <span id="latest-message-time" class="receipt-time">等待上报</span>
+            </div>
           </div>
-          <div class="connection-card">
-            <div class="connection-head"><span>连接状态</span><span id="broker-pill" class="pill pill-idle">未连接</span></div>
-            <p id="connection-detail" class="connection-detail">输入连接信息后，接收 EC200U 的 4G 消息。</p>
-            <button id="settings-button" class="button button-primary" type="button">设置云端连接 <span aria-hidden="true">↗</span></button>
-            <button id="disconnect-button" class="button button-quiet" type="button" hidden>断开连接</button>
-            <a id="operator-link" class="button button-quiet" referrerpolicy="no-referrer" hidden>打开风扇控制台</a>
+          <div class="status-strip-right">
+            <span id="data-pill" class="pill pill-idle">等待真实数据</span>
+            <span id="last-updated" class="freshness-time">暂无采集时间</span>
           </div>
         </section>
+
+        <!-- 6 项核心遥测指标 -->
+        <section class="readings" aria-label="实时测量值">
+          <article class="reading reading-people">
+            <div class="reading-top">
+              <span>识别人数</span>
+              <span class="reading-badge">K230</span>
+            </div>
+            <div class="reading-value">
+              <strong id="people-count">—</strong>
+              <span class="reading-unit">人</span>
+            </div>
+            <p id="people-source" class="reading-meta">计划由 K230 提供</p>
+          </article>
+
+          <article class="reading">
+            <div class="reading-top">
+              <span>温度</span>
+              <span class="reading-badge">AHT20</span>
+            </div>
+            <div class="reading-value">
+              <strong id="temperature-c">—</strong>
+              <span class="reading-unit">°C</span>
+            </div>
+            <p id="temperature-source" class="reading-meta">计划由环境传感器提供</p>
+          </article>
+
+          <article class="reading">
+            <div class="reading-top">
+              <span>相对湿度</span>
+              <span class="reading-badge">% RH</span>
+            </div>
+            <div class="reading-value">
+              <strong id="humidity-pct">—</strong>
+              <span class="reading-unit">%</span>
+            </div>
+            <p id="humidity-source" class="reading-meta">计划由环境传感器提供</p>
+          </article>
+
+          <article class="reading">
+            <div class="reading-top">
+              <span>环境光照</span>
+              <span class="reading-badge">BH1750</span>
+            </div>
+            <div class="reading-value">
+              <strong id="light-lux">—</strong>
+              <span id="light-unit" class="reading-unit">lx</span>
+            </div>
+            <p id="light-source" class="reading-meta">计划由外接 BH1750 提供</p>
+          </article>
+
+          <article class="reading">
+            <div class="reading-top">
+              <span>空气质量</span>
+              <span id="air-conn-pill" class="pill pill-idle">待连接</span>
+            </div>
+            <div class="reading-value">
+              <strong id="air-quality">—</strong>
+              <span id="air-unit" class="reading-unit">SGP30</span>
+            </div>
+            <p id="air-detail" class="reading-meta">eCO₂ — · TVOC —</p>
+          </article>
+
+          <article class="reading">
+            <div class="reading-top">
+              <span>4G 网络</span>
+              <span id="link-pill" class="pill pill-idle">待连接</span>
+            </div>
+            <div class="reading-value">
+              <strong id="net-state">—</strong>
+              <span id="net-unit" class="reading-unit">EC200U</span>
+            </div>
+            <p id="link-summary" class="reading-meta">等待 EC200U 上报消息</p>
+          </article>
+        </section>
+
+        <!-- 主工作区：左趋势与流水 / 右硬件控制与 AI 助手 -->
+        <div class="workspace-grid">
+          <div class="workspace-main">
+            <!-- 实时趋势图 -->
+            <section class="surface-panel trend-panel" aria-labelledby="trend-title">
+              <div class="panel-head">
+                <div>
+                  <span class="panel-kicker">TREND</span>
+                  <h2 id="trend-title">近期变化趋势</h2>
+                </div>
+                <div class="segmented-tabs" role="tablist" aria-label="趋势指标切换">
+                  <button class="seg-tab active" type="button" data-trend-metric="temp">温度</button>
+                  <button class="seg-tab" type="button" data-trend-metric="humidity">湿度</button>
+                  <button class="seg-tab" type="button" data-trend-metric="light">光照</button>
+                  <button class="seg-tab" type="button" data-trend-metric="people">人数</button>
+                </div>
+              </div>
+              <div id="trend-chart-wrap" class="trend-chart-wrap">
+                <svg id="trend-svg" class="trend-svg" viewBox="0 0 640 180" preserveAspectRatio="none" aria-label="遥测趋势曲线"></svg>
+                <div id="trend-empty" class="trend-empty">连接并收到至少 2 条历史样本后自动绘制变化曲线。</div>
+              </div>
+              <div id="trend-summary" class="trend-summary"></div>
+            </section>
+
+            <!-- 统一消息与历史面板（合并原 3 处重复日志） -->
+            <section class="surface-panel logs-panel" aria-labelledby="logs-title">
+              <div class="panel-head">
+                <div>
+                  <span class="panel-kicker">TELEMETRY LOG</span>
+                  <h2 id="logs-title">遥测流水与历史</h2>
+                </div>
+                <div class="logs-head-right">
+                  <div class="segmented-tabs" role="tablist" aria-label="日志视图切换">
+                    <button id="tab-btn-live" class="seg-tab active" type="button" data-log-tab="live">
+                      实时消息 <span id="message-count" class="tab-badge">0 条</span>
+                    </button>
+                    <button id="tab-btn-history" class="seg-tab" type="button" data-log-tab="history">
+                      已存历史 <span id="history-count" class="tab-badge">未连接</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="log-pane-live" class="log-pane">
+                <ul id="message-list" class="clean-list">
+                  <li class="empty-message">连接后，新消息会显示在这里。</li>
+                </ul>
+              </div>
+
+              <div id="log-pane-history" class="log-pane" hidden>
+                <p id="history-status" class="panel-note">本机演示会自动读取历史；公开网站需配置已部署的 HTTPS 历史 API。</p>
+                <ul id="history-list" class="clean-list history-clean-list">
+                  <li class="empty-message">暂无历史记录。</li>
+                </ul>
+              </div>
+            </section>
+          </div>
+
+          <aside class="workspace-side">
+            <!-- 硬件控制中心 -->
+            <section id="unified-control-panel" class="surface-panel control-panel" aria-labelledby="control-title">
+              <div class="panel-head">
+                <div>
+                  <span class="panel-kicker">DEVICE CONTROL</span>
+                  <h2 id="control-title">硬件控制中心</h2>
+                </div>
+                <span id="ctrl-conn-pill" class="pill pill-idle">检测中</span>
+              </div>
+              <p id="ctrl-status-line" class="panel-note">正在连接设备控制服务…</p>
+
+              <div class="ctrl-section">
+                <div class="ctrl-section-head">
+                  <h3>风扇与灯环</h3>
+                </div>
+
+                <div class="ctrl-field">
+                  <label for="ctrl-fan-level">风扇档位</label>
+                  <div class="fan-pills" role="group" aria-label="风扇档位快捷选择">
+                    <button type="button" class="fan-pill active" data-fan-val="0">关</button>
+                    <button type="button" class="fan-pill" data-fan-val="1">1</button>
+                    <button type="button" class="fan-pill" data-fan-val="2">2</button>
+                    <button type="button" class="fan-pill" data-fan-val="3">3</button>
+                    <button type="button" class="fan-pill" data-fan-val="4">4</button>
+                    <button type="button" class="fan-pill" data-fan-val="5">5</button>
+                  </div>
+                  <select id="ctrl-fan-level" class="sr-only-select" aria-hidden="true" tabindex="-1">
+                    <option value="0">关闭</option>
+                    <option value="1">1 档</option>
+                    <option value="2">2 档</option>
+                    <option value="3">3 档</option>
+                    <option value="4">4 档</option>
+                    <option value="5">5 档</option>
+                  </select>
+                </div>
+
+                <div class="ctrl-field ctrl-field-inline">
+                  <label for="ctrl-led-out">教室灯环</label>
+                  <div class="led-pills" role="group" aria-label="灯环开关">
+                    <button type="button" class="led-pill active" data-led-val="0">灭</button>
+                    <button type="button" class="led-pill" data-led-val="1">亮</button>
+                  </div>
+                  <select id="ctrl-led-out" class="sr-only-select" aria-hidden="true" tabindex="-1">
+                    <option value="0">灭</option>
+                    <option value="1">亮</option>
+                  </select>
+                </div>
+
+                <div class="ctrl-actions">
+                  <button id="ctrl-apply-btn" class="button button-primary" type="button" disabled>应用手动设置</button>
+                  <button id="ctrl-auto-btn" class="button button-secondary" type="button" disabled>恢复自动</button>
+                </div>
+              </div>
+
+              <div class="ctrl-divider" aria-hidden="true"></div>
+
+              <div class="ctrl-section">
+                <div class="ctrl-section-head">
+                  <h3>模拟空调</h3>
+                </div>
+                <div class="ctrl-field ctrl-field-inline">
+                  <label for="ctrl-ac-temp">设定温度</label>
+                  <div class="temp-stepper">
+                    <button type="button" class="stepper-btn" id="ac-temp-minus" aria-label="降低温度">−</button>
+                    <input id="ctrl-ac-temp" type="number" min="16" max="30" value="26" />
+                    <span class="stepper-unit">°C</span>
+                    <button type="button" class="stepper-btn" id="ac-temp-plus" aria-label="升高温度">+</button>
+                  </div>
+                </div>
+                <div class="ctrl-actions">
+                  <button id="ctrl-ac-on-btn" class="button button-primary" type="button" disabled>开机 / 应用</button>
+                  <button id="ctrl-ac-off-btn" class="button button-secondary" type="button" disabled>关机</button>
+                </div>
+              </div>
+
+              <p id="ctrl-last-cmd" class="ctrl-receipt">最近控制回执：暂无</p>
+            </section>
+
+            <!-- AI 助手入口卡片 -->
+            <section class="anda-entry-section" aria-label="AI 助手入口">
+              <button id="open-agent-drawer" class="anda-entry-card" type="button">
+                <div class="anda-entry-left">
+                  <span class="anda-entry-icon" aria-hidden="true">✨</span>
+                  <div class="anda-entry-text">
+                    <div class="anda-entry-title">
+                      <span>智慧教室 AI 助手</span>
+                      <span id="agent-entry-model-tag" class="anda-model-tag" hidden>deepseek-chat</span>
+                    </div>
+                    <p class="anda-entry-sub">舒适度体检、1 小时趋势分析与节能诊断</p>
+                  </div>
+                </div>
+                <div class="anda-entry-right">
+                  <span id="agent-entry-pill" class="pill pill-idle">检测中</span>
+                  <span class="anda-entry-arrow" aria-hidden="true">→</span>
+                </div>
+              </button>
+            </section>
+          </aside>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <span>移远杯 · 智慧教室系统</span>
+        <span>实时展示与远程控制控制台</span>
+      </footer>
+    </div>
+
+    <!-- 系统架构与联调说明弹窗（从主屏降级收纳） -->
+    <dialog id="system-info-dialog" class="settings-dialog info-dialog" aria-labelledby="system-info-title">
+      <div class="info-dialog-inner">
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">ARCHITECTURE &amp; NOTES</p>
+            <h2 id="system-info-title">系统链路与说明</h2>
+          </div>
+          <button id="close-system-info" class="close-button" type="button" aria-label="关闭">×</button>
+        </div>
+
+        <p class="dialog-copy">这里展示设备上报的实时数据。尚未接入的项目会明确显示“等待数据”，测试消息不会冒充传感器读数。</p>
+
+        <div class="connection-summary-box">
+          <div class="connection-summary-head">
+            <strong>当前云端连接</strong>
+          </div>
+          <p id="connection-detail" class="connection-detail">输入连接信息后，接收 EC200U 的 4G 消息。</p>
+          <div class="connection-summary-actions">
+            <button id="disconnect-button" class="button button-secondary" type="button" hidden>断开连接</button>
+            <a id="operator-link" class="button button-secondary" referrerpolicy="no-referrer" hidden>打开风扇控制台</a>
+          </div>
+        </div>
 
         <section class="flow" aria-label="当前数据链路">
           <span class="flow-title">数据从哪里来</span>
-          <span class="flow-step">AHT20 / BH1750 / SGP30 <small>温湿度、照度与空气采集</small></span>
-          <span class="flow-arrow">→</span>
-          <span class="flow-step">STM32 + EC200U <small>4G 上报</small></span>
-          <span class="flow-arrow">→</span>
-          <span id="flow-broker" class="flow-step">EMQX <small>MQTT 转发</small></span>
-          <span class="flow-arrow">→</span>
-          <span id="flow-browser" class="flow-step">当前网页 <small>实时订阅</small></span>
-        </section>
-
-        <section class="receipt" aria-live="polite" aria-label="网页消息接收状态">
-          <span id="receipt-label" class="receipt-label">本次页面收到的消息</span>
-          <strong id="latest-message">尚未收到新消息</strong>
-          <small id="latest-message-time">连接后发布一条新消息即可验证</small>
-        </section>
-
-        <section class="section-heading" aria-labelledby="room-title">
-          <div><p class="eyebrow">CLASSROOM 01</p><h2 id="room-title">教室实时状态</h2></div>
-          <div class="freshness"><span id="data-pill" class="pill pill-idle">等待真实数据</span><small id="last-updated">暂无采集时间</small></div>
-        </section>
-
-        <section class="readings" aria-label="实时测量值">
-          <article class="reading reading-people"><div class="reading-top"><span>识别人数</span><span class="reading-symbol">◌</span></div><div class="reading-value"><strong id="people-count">—</strong><span>人</span></div><p id="people-source">计划由 K230 提供</p></article>
-          <article class="reading"><div class="reading-top"><span>温度</span><span class="reading-symbol">°</span></div><div class="reading-value"><strong id="temperature-c">—</strong><span>°C</span></div><p id="temperature-source">计划由环境传感器提供</p></article>
-          <article class="reading"><div class="reading-top"><span>相对湿度</span><span class="reading-symbol">% RH</span></div><div class="reading-value"><strong id="humidity-pct">—</strong><span>%</span></div><p id="humidity-source">计划由环境传感器提供</p></article>
-          <article class="reading"><div class="reading-top"><span>环境光照</span><span class="reading-symbol">☼</span></div><div class="reading-value"><strong id="light-lux">—</strong><span id="light-unit">lx</span></div><p id="light-source">计划由外接 BH1750 提供</p></article>
-          <article class="reading reading-air"><div class="reading-top"><span>空气质量</span><span id="air-conn-pill" class="pill pill-idle">待连接</span></div><div class="reading-value"><strong id="air-quality">—</strong><span id="air-unit">SGP30</span></div><p id="air-detail">eCO₂ — · TVOC —</p></article>
-          <article class="reading reading-net"><div class="reading-top"><span>4G 网络</span><span id="link-pill" class="pill pill-idle">待连接</span></div><div class="reading-value"><strong id="net-state">—</strong><span id="net-unit">EC200U</span></div><p id="link-summary">等待 EC200U 上报消息</p></article>
-        </section>
-
-        <section id="unified-control-panel" class="panel control-panel" aria-labelledby="control-title">
-          <div class="panel-head">
-            <div>
-              <p class="eyebrow">DEVICE CONTROL</p>
-              <h2 id="control-title">硬件控制中心</h2>
-            </div>
-            <span id="ctrl-conn-pill" class="pill pill-idle">检测中</span>
+          <div class="flow-steps">
+            <span class="flow-step">AHT20 / BH1750 / SGP30 <small>温湿度、照度与空气采集</small></span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span class="flow-step">STM32 + EC200U <small>4G 上报</small></span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span id="flow-broker" class="flow-step">EMQX <small>MQTT 转发</small></span>
+            <span class="flow-arrow" aria-hidden="true">→</span>
+            <span id="flow-browser" class="flow-step">当前网页 <small>实时订阅</small></span>
           </div>
-          <p id="ctrl-status-line" class="panel-note">正在连接设备控制服务…</p>
-
-          <div class="ctrl-grid">
-            <div class="ctrl-card">
-              <h3>风扇与灯环</h3>
-              <div class="ctrl-row">
-                <label for="ctrl-fan-level">风扇档位</label>
-                <select id="ctrl-fan-level">
-                  <option value="0">关闭</option>
-                  <option value="1">1 档</option>
-                  <option value="2">2 档</option>
-                  <option value="3">3 档</option>
-                  <option value="4">4 档</option>
-                  <option value="5">5 档</option>
-                </select>
-                <label for="ctrl-led-out">灯环</label>
-                <select id="ctrl-led-out">
-                  <option value="0">灭</option>
-                  <option value="1">亮</option>
-                </select>
-              </div>
-              <div class="ctrl-actions">
-                <button id="ctrl-apply-btn" class="button button-primary" type="button" disabled>应用手动设置</button>
-                <button id="ctrl-auto-btn" class="button button-quiet" type="button" disabled>恢复自动模式</button>
-              </div>
-            </div>
-
-            <div class="ctrl-card">
-              <h3>模拟空调（1.2.0）</h3>
-              <div class="ctrl-row">
-                <label for="ctrl-ac-temp">设定温度</label>
-                <input id="ctrl-ac-temp" type="number" min="16" max="30" value="26" />
-                <span>°C</span>
-              </div>
-              <div class="ctrl-actions">
-                <button id="ctrl-ac-on-btn" class="button button-primary" type="button" disabled>开机 / 应用温度</button>
-                <button id="ctrl-ac-off-btn" class="button button-quiet" type="button" disabled>关机</button>
-              </div>
-            </div>
-          </div>
-
-          <p id="ctrl-last-cmd" class="panel-note">最近控制回执：暂无</p>
-        </section>
-
-        <!-- 安大+ 风格：AI 助手看板入口大卡片 -->
-        <section class="anda-entry-section" aria-label="AI 助手入口">
-          <button id="open-agent-drawer" class="anda-entry-card" type="button">
-            <div class="anda-entry-left">
-              <span class="anda-entry-icon" aria-hidden="true">✨</span>
-              <div class="anda-entry-text">
-                <div class="anda-entry-title">
-                  <span>智慧教室 AI 助手</span>
-                  <span id="agent-entry-model-tag" class="anda-model-tag">deepseek-chat</span>
-                </div>
-                <p class="anda-entry-sub">基于板载真实遥测 · 舒适度、近 1 小时趋势与节能自检一键诊断</p>
-              </div>
-            </div>
-            <div class="anda-entry-right">
-              <span id="agent-entry-pill" class="pill pill-idle">检测中</span>
-              <span class="anda-entry-arrow" aria-hidden="true">→</span>
-            </div>
-          </button>
-        </section>
-
-        <section class="panel message-panel" aria-labelledby="message-title">
-          <div class="panel-head"><div><p class="eyebrow">MESSAGE LOG</p><h2 id="message-title">最近收到的消息</h2></div><span id="message-count" class="count">0 条</span></div>
-          <ul id="message-list" class="message-list"><li class="empty-message">连接后，新消息会显示在这里。</li></ul>
-        </section>
-
-        <section class="panel history-panel" aria-labelledby="history-title">
-          <div class="panel-head"><div><p class="eyebrow">HISTORY</p><h2 id="history-title">已存储的最近数据</h2></div><span id="history-count" class="count">未连接历史服务</span></div>
-          <p id="history-status" class="panel-note">本机演示会自动读取历史；公开网站需配置已部署的 HTTPS 历史 API。</p>
-          <ul id="history-list" class="history-list"><li>暂无历史记录。</li></ul>
         </section>
 
         <p class="data-note">说明：环境光照已对齐 LCD 改用外接 BH1750 照度传感器（单位 lx）；若设备仅上报旧版板载 ADC 原码则自动兼容显示 ADC；K230 未接入时人数显示“—”。历史记录来自独立接收服务；未部署该服务时公开网站只显示 MQTT 最新消息。</p>
-      </main>
-      <footer><span>移远杯 · 智慧教室系统</span><span>当前版本：实时展示联调</span></footer>
-    </div>
+      </div>
+    </dialog>
 
     <!-- 安大+ 风格沉浸式 AI 助手（全屏抽屉视图） -->
     <div id="anda-agent-drawer" class="anda-drawer" hidden aria-hidden="true" role="dialog" aria-label="智慧教室 AI 助手">
       <div id="anda-drawer-backdrop" class="anda-drawer-backdrop"></div>
       <div class="anda-drawer-window">
-        <!-- 视图 1：对话主界面（1:1 复刻安大+ 图 2） -->
         <section id="anda-chat-view" class="anda-view anda-view-chat">
           <header class="anda-topbar">
             <button id="close-agent-drawer" class="anda-topbar-btn" type="button" aria-label="返回看板">
@@ -169,7 +349,6 @@
           </header>
 
           <div id="anda-chat-body" class="anda-chat-body">
-            <!-- 初始空态欢迎屏（未提问时） -->
             <div id="anda-welcome-screen" class="anda-welcome-screen">
               <div class="anda-welcome-head">
                 <h3>问点什么</h3>
@@ -195,7 +374,6 @@
               </div>
             </div>
 
-            <!-- 消息对话流 -->
             <div id="anda-messages-list" class="anda-messages-list" aria-live="polite"></div>
           </div>
 
@@ -210,7 +388,6 @@
           </footer>
         </section>
 
-        <!-- 视图 2：模型配置界面（1:1 复刻安大+ 图 3 & 图 4） -->
         <section id="anda-config-view" class="anda-view anda-view-config" hidden>
           <header class="anda-topbar">
             <button id="back-to-chat" class="anda-topbar-btn" type="button" aria-label="返回对话">
@@ -290,7 +467,13 @@
 
     <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title">
       <form id="connection-form" method="dialog" autocomplete="off">
-        <div class="dialog-head"><div><p class="eyebrow">MQTT OVER WSS</p><h2 id="settings-title">连接云端</h2></div><button id="close-settings" class="close-button" type="button" aria-label="关闭">×</button></div>
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">MQTT OVER WSS</p>
+            <h2 id="settings-title">连接云端</h2>
+          </div>
+          <button id="close-settings" class="close-button" type="button" aria-label="关闭">×</button>
+        </div>
         <p class="dialog-copy">密码只在当前页面的内存中用于连接，不会写入网页文件或浏览器本地存储。连接后可订阅测试主题及团队约定的真实数据主题。</p>
         <label>EMQX 主机<input id="broker-host" name="brokerHost" type="text" inputmode="url" required pattern="[A-Za-z0-9.-]+" value="i1103de1.ala.cn-hangzhou.emqxsl.cn" /></label>
         <label>用户名<input id="broker-user" name="brokerUser" type="text" required value="classroom_test" /></label>

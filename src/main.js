@@ -167,6 +167,7 @@ async function refreshHistory() {
       item.append(time, `${people} · ${row.temperature_c} °C · ${row.humidity_pct}% · ${light}${air}`)
       elements['history-list'].append(item)     // textContent 路径，不执行云端载荷中的 HTML。
     }
+    if (typeof updateTrendSamples === 'function') updateTrendSamples(data.history)
     if (data.latest) showTelemetry(data.latest, data.latest.received_at)
     if (apiDriven && data.latest) {
       elements['latest-message'].textContent = `${data.latest.simulated ? '模拟样本' : '设备遥测'} #${data.latest.seq}`
@@ -771,4 +772,172 @@ if (ctrlEls.applyBtn) {
   ctrlEls.acOffBtn.addEventListener('click', () => sendControlIntent({ ac_temp_c: 0 }))
   refreshControlState()
   setInterval(refreshControlState, 3_000)
+}
+
+// --- 控制台 UI 交互增强：链路弹窗、日志切换、硬件快捷按钮、SVG 趋势图 ---
+const infoDialog = document.getElementById('system-info-dialog')
+document.getElementById('system-info-btn')?.addEventListener('click', () => infoDialog?.showModal())
+document.getElementById('close-system-info')?.addEventListener('click', () => infoDialog?.close())
+infoDialog?.addEventListener('click', e => {
+  if (e.target === infoDialog) infoDialog.close()
+})
+
+for (const tabBtn of document.querySelectorAll('[data-log-tab]')) {
+  tabBtn.addEventListener('click', () => {
+    const target = tabBtn.dataset.logTab
+    for (const b of document.querySelectorAll('[data-log-tab]')) {
+      b.classList.toggle('active', b === tabBtn)
+    }
+    const livePane = document.getElementById('log-pane-live')
+    const histPane = document.getElementById('log-pane-history')
+    if (livePane) livePane.hidden = target !== 'live'
+    if (histPane) histPane.hidden = target !== 'history'
+  })
+}
+
+// 风扇档位、灯环、空调温度步进器与底层表单控件双向同步
+function syncControlPills() {
+  const fanVal = ctrlEls.fan?.value ?? '0'
+  for (const btn of document.querySelectorAll('[data-fan-val]')) {
+    btn.classList.toggle('active', btn.dataset.fanVal === fanVal)
+  }
+  const ledVal = ctrlEls.led?.value ?? '0'
+  for (const btn of document.querySelectorAll('[data-led-val]')) {
+    btn.classList.toggle('active', btn.dataset.ledVal === ledVal)
+  }
+}
+
+for (const btn of document.querySelectorAll('[data-fan-val]')) {
+  btn.addEventListener('click', () => {
+    if (ctrlEls.fan) ctrlEls.fan.value = btn.dataset.fanVal
+    syncControlPills()
+  })
+}
+
+for (const btn of document.querySelectorAll('[data-led-val]')) {
+  btn.addEventListener('click', () => {
+    if (ctrlEls.led) ctrlEls.led.value = btn.dataset.ledVal
+    syncControlPills()
+  })
+}
+
+document.getElementById('ac-temp-minus')?.addEventListener('click', () => {
+  if (!ctrlEls.acTemp) return
+  const next = Math.max(16, (Number(ctrlEls.acTemp.value) || 26) - 1)
+  ctrlEls.acTemp.value = String(next)
+})
+
+document.getElementById('ac-temp-plus')?.addEventListener('click', () => {
+  if (!ctrlEls.acTemp) return
+  const next = Math.min(30, (Number(ctrlEls.acTemp.value) || 26) + 1)
+  ctrlEls.acTemp.value = String(next)
+})
+
+// 趋势图渲染（基于历史样本绘制轻量 SVG 折线面积图）
+const trendState = { metric: 'temp', samples: [] }
+const trendMeta = {
+  temp: { label: '温度', unit: '°C', extract: r => (r.temperature_c == null ? null : Number(r.temperature_c)) },
+  humidity: { label: '湿度', unit: '%', extract: r => (r.humidity_pct == null ? null : Number(r.humidity_pct)) },
+  light: { label: '光照', unit: 'lx', extract: r => (r.light_lux == null ? null : Number(r.light_lux)) },
+  people: { label: '人数', unit: '人', extract: r => (r.people_count == null ? null : Number(r.people_count)) },
+}
+
+function renderTrendChart() {
+  const svg = document.getElementById('trend-svg')
+  const emptyEl = document.getElementById('trend-empty')
+  const summaryEl = document.getElementById('trend-summary')
+  if (!svg || !emptyEl || !summaryEl) return
+
+  const meta = trendMeta[trendState.metric] || trendMeta.temp
+  const points = [...trendState.samples]
+    .reverse()
+    .map(r => ({ v: meta.extract(r), t: r.received_at }))
+    .filter(p => p.v != null && Number.isFinite(p.v))
+
+  if (points.length < 2) {
+    svg.replaceChildren()
+    emptyEl.hidden = false
+    summaryEl.textContent = ''
+    return
+  }
+
+  emptyEl.hidden = true
+  const vals = points.map(p => p.v)
+  const minVal = Math.min(...vals)
+  const maxVal = Math.max(...vals)
+  const span = maxVal - minVal || 1
+  const padX = 12
+  const padY = 18
+  const W = 640
+  const H = 180
+
+  const coords = points.map((p, idx) => {
+    const x = padX + (idx / (points.length - 1)) * (W - padX * 2)
+    const y = H - padY - ((p.v - minVal) / span) * (H - padY * 2)
+    return [Number(x.toFixed(1)), Number(y.toFixed(1))]
+  })
+
+  const lineD = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x},${y}`).join(' ')
+  const areaD = `${lineD} L${coords[coords.length - 1][0]},${H} L${coords[0][0]},${H} Z`
+
+  const ns = 'http://www.w3.org/2000/svg'
+  const defs = document.createElementNS(ns, 'defs')
+  const grad = document.createElementNS(ns, 'linearGradient')
+  grad.id = 'trendGrad'
+  grad.setAttribute('x1', '0')
+  grad.setAttribute('y1', '0')
+  grad.setAttribute('x2', '0')
+  grad.setAttribute('y2', '1')
+  const s1 = document.createElementNS(ns, 'stop')
+  s1.setAttribute('offset', '0%')
+  s1.setAttribute('stop-color', '#115e4b')
+  s1.setAttribute('stop-opacity', '0.24')
+  const s2 = document.createElementNS(ns, 'stop')
+  s2.setAttribute('offset', '100%')
+  s2.setAttribute('stop-color', '#115e4b')
+  s2.setAttribute('stop-opacity', '0.02')
+  grad.append(s1, s2)
+  defs.append(grad)
+
+  const area = document.createElementNS(ns, 'path')
+  area.setAttribute('d', areaD)
+  area.setAttribute('fill', 'url(#trendGrad)')
+
+  const line = document.createElementNS(ns, 'path')
+  line.setAttribute('d', lineD)
+  line.setAttribute('fill', 'none')
+  line.setAttribute('stroke', '#115e4b')
+  line.setAttribute('stroke-width', '2.5')
+  line.setAttribute('stroke-linecap', 'round')
+  line.setAttribute('stroke-linejoin', 'round')
+
+  const last = coords[coords.length - 1]
+  const dot = document.createElementNS(ns, 'circle')
+  dot.setAttribute('cx', String(last[0]))
+  dot.setAttribute('cy', String(last[1]))
+  dot.setAttribute('r', '4.5')
+  dot.setAttribute('fill', '#115e4b')
+  dot.setAttribute('stroke', '#ffffff')
+  dot.setAttribute('stroke-width', '2')
+
+  svg.replaceChildren(defs, area, line, dot)
+
+  const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)
+  summaryEl.textContent = `${meta.label} · 样本 ${points.length} 条 · 最低 ${minVal}${meta.unit} · 最高 ${maxVal}${meta.unit} · 均值 ${avg}${meta.unit}`
+}
+
+function updateTrendSamples(historyRows) {
+  if (!Array.isArray(historyRows)) return
+  trendState.samples = historyRows.slice(0, 24)
+  renderTrendChart()
+}
+
+for (const btn of document.querySelectorAll('[data-trend-metric]')) {
+  btn.addEventListener('click', () => {
+    trendState.metric = btn.dataset.trendMetric || 'temp'
+    for (const b of document.querySelectorAll('[data-trend-metric]')) {
+      b.classList.toggle('active', b === btn)
+    }
+    renderTrendChart()
+  })
 }

@@ -1,138 +1,1692 @@
 /*
-智慧教室看板的样式：用浅雾绿、细网格和仪表读数呈现“教室环境监测”。
-阅读顺序先看连接，再看数据，再看消息；手机窄屏时保持同样的顺序。
+智慧教室控制台样式：
+- 控制台优先布局：紧凑顶栏 → 6 项核心遥测 → 左侧趋势与流水 / 右侧硬件控制与 AI 助手
+- 严格保证 >= 12px 最小字号、>= 4.5:1 对比度、移动端 16px 输入控件防缩放、无重边框嵌套
 */
-:root{font-family:"Segoe UI","Microsoft YaHei",sans-serif;color:#173b35;background:#e9f1ee;font-synthesis:none}
-*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:3px solid #3e9d83;outline-offset:3px}
-.page-shell{max-width:1440px;margin:auto;padding:0 4vw}.topbar{height:82px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #c9dcd4}.brand{display:flex;align-items:center;gap:12px;font-size:18px;font-weight:800;letter-spacing:.02em}.brand small{display:block;color:#6d8980;font:700 10px/1.4 Consolas,monospace;letter-spacing:.24em}.brand-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:#176a56;color:#fff;font-size:23px;letter-spacing:-.12em}.brand-mark span{color:#bee5b4}.edition,.eyebrow{font:700 11px/1.4 Consolas,"Microsoft YaHei",monospace;letter-spacing:.16em;color:#48806d}.edition{border:1px solid #b9d4c8;padding:8px 12px;border-radius:99px}
-.intro{display:grid;grid-template-columns:minmax(0,1fr) 340px;align-items:end;gap:6vw;padding:70px 0 58px}.intro h1{font-size:clamp(43px,5.4vw,78px);line-height:1.12;letter-spacing:-.055em;margin:14px 0 22px;font-weight:850}.intro h1 em{font-style:normal;color:#188168}.intro-copy{max-width:540px;color:#5d7b71;font-size:15px;line-height:1.9;margin:0}.connection-card{background:#f9fcfa;border:1px solid #c6dbd0;border-radius:22px;padding:24px;box-shadow:0 12px 36px #184d3310}.connection-head,.reading-top,.panel-head{display:flex;align-items:center;justify-content:space-between;gap:15px}.connection-head{font-weight:800}.connection-detail{min-height:50px;color:#658277;line-height:1.7;font-size:13px}.pill{display:inline-flex;align-items:center;gap:7px;border-radius:50px;padding:8px 11px;font:700 11px/1 Consolas,"Microsoft YaHei",monospace;white-space:nowrap}.pill:before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}.pill-idle{color:#6f8c81;background:#e7efea}.pill-live{color:#0e7253;background:#dcf4e6}.pill-warn{color:#a36a19;background:#fff0d7}.pill-error{color:#ad4e48;background:#f9e6e2}.button{border:0;border-radius:11px;padding:12px 16px;font-size:13px;font-weight:800}.button-primary{background:#176a56;color:#fff;display:flex;justify-content:space-between;width:100%}.button-primary:hover{background:#0e5846}.button-quiet{background:none;color:#54786a;padding:10px 0 0}.button-full{justify-content:center;margin-top:8px}
-.flow{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#dcece5;border:1px solid #bdd8c9;border-radius:16px;padding:17px 22px}.flow-title{font-size:11px;color:#628b79;font-weight:800;margin-right:10px}.flow-step{font-size:12px;font-weight:800}.flow-step small{display:block;color:#7c9a8b;font-size:10px;font-weight:500;margin-top:3px}.flow-arrow{color:#68a888;font-size:20px}.section-heading{display:flex;align-items:end;justify-content:space-between;gap:18px;margin:58px 0 20px}.section-heading h2,.panel h2{margin:5px 0 0;letter-spacing:-.04em}.section-heading h2{font-size:30px}.freshness{text-align:right}.freshness small{display:block;color:#82998f;margin-top:8px;font-size:11px}
-.receipt{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:12px;padding:15px 20px;border:1px solid #c6dbd0;border-radius:14px;background:#f9fcfa}.receipt-label{font-size:11px;font-weight:800;color:#6b8d7d}.receipt strong{font-size:14px;color:#176a56}.receipt small{font-size:11px;color:#8ba196;margin-left:auto}
-.readings{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.reading{background:#f9fcfa;border:1px solid #d0e0d7;border-radius:19px;padding:20px;min-height:190px}.reading-people{background:#176a56;color:#fff;border-color:#176a56}.reading-air{background:linear-gradient(180deg,#f2f8fb 0,#f9fcfa 100%)}.reading-net{background:linear-gradient(180deg,#eef7f2 0,#f9fcfa 100%)}.reading-top{font-size:13px;font-weight:800}.reading-top .pill{font-size:11px;padding:2px 8px}.reading-symbol{font:700 13px Consolas,monospace;opacity:.55}.reading-value{display:flex;align-items:baseline;gap:8px;margin:28px 0 8px}.reading-value strong{font:650 clamp(32px,3vw,48px)/1 Consolas,"Microsoft YaHei",monospace;letter-spacing:-.06em}.reading-value span{font-size:12px;color:#789488}.reading-people .reading-value span,.reading-people p{color:#bce1cf}.reading p{font-size:11px;color:#8ba196;margin:0}
-.message-panel{margin-top:15px}.panel{background:#f9fcfa;border:1px solid #d0e0d7;border-radius:19px;padding:25px;min-height:210px}.panel h2{font-size:21px}.panel-note{font-size:11px;color:#648675;line-height:1.7;overflow-wrap:anywhere}.panel-note code{font-family:Consolas,monospace}.count{font-size:11px;color:#678377}.message-list{list-style:none;margin:20px 0 0;padding:0;max-height:220px;overflow:auto}.message-list li{border-top:1px solid #e1ebe5;padding:11px 0;display:grid;grid-template-columns:70px minmax(0,1fr);gap:8px;font-size:11px}.message-list time{font-family:Consolas,monospace;color:#81a092}.message-list strong{font-weight:700;color:#215e4e}.message-list code{display:block;color:#6a897d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}.message-list .empty-message{display:block;color:#8aa098}.data-note{color:#799186;font-size:11px;line-height:1.6;margin:22px 0 50px}footer{display:flex;justify-content:space-between;gap:20px;border-top:1px solid #c9dcd4;padding:20px 0 35px;color:#839b8d;font-size:11px}
-.settings-dialog{border:1px solid #b8d3c3;background:#f9fcfa;border-radius:22px;padding:0;width:min(460px,calc(100vw - 26px));box-shadow:0 26px 90px #143b3560;color:#173b35}.settings-dialog::backdrop{background:#153f38a8;backdrop-filter:blur(4px)}.settings-dialog form{padding:26px}.dialog-head{display:flex;justify-content:space-between;align-items:start}.dialog-head h2{margin:4px 0 0;font-size:27px}.close-button{border:0;background:none;color:#638477;font-size:30px;line-height:1}.dialog-copy{font-size:12px;color:#658277;line-height:1.7;margin:18px 0}.settings-dialog label{display:block;font-size:12px;font-weight:800;margin:12px 0}.settings-dialog label small{color:#8fa69b;font-weight:500}.settings-dialog input{display:block;margin-top:7px;padding:11px 12px;border:1px solid #cbded3;border-radius:9px;background:#fff;width:100%;font-size:13px;color:#173b35}.form-message{min-height:18px;font-size:12px;color:#ae5751}
-.history-panel{min-height:140px;margin-top:15px}.history-list{list-style:none;padding:0;margin:18px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.history-list li{border:1px solid #dce9e1;border-radius:10px;padding:10px 12px;font:12px/1.6 Consolas,"Microsoft YaHei",monospace;overflow-wrap:anywhere}.history-list time{display:block;color:#789488;font-size:10px}
+:root {
+  --bg: #eef4f0;
+  --surface: #ffffff;
+  --surface-soft: #f5f9f6;
+  --ink: #13312a;
+  --ink-2: #355249;
+  --ink-muted: #46635a;
+  --brand: #115e4b;
+  --brand-hover: #0b493a;
+  --brand-soft: #dff2ea;
+  --divider: #e0ebe5;
+  --shadow-card: 0 2px 12px rgba(16, 56, 44, 0.055);
+  --shadow-hover: 0 8px 24px rgba(16, 56, 44, 0.09);
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  font-synthesis: none;
+}
 
-/* 安大+ 风格：看板入口大胶囊卡片 */
-.anda-entry-section{margin-top:18px}
-.anda-entry-card{width:100%;border:1px solid #c9ddd2;background:#f9fcfa;border-radius:22px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:18px;text-align:left;box-shadow:0 6px 24px #174d350c;transition:transform .2s cubic-bezier(.2,0,0,1),box-shadow .2s,border-color .2s}
-.anda-entry-card:hover{transform:translateY(-2px);box-shadow:0 12px 36px #174d3515;border-color:#a5cfbc}
-.anda-entry-left{display:flex;align-items:center;gap:18px;min-width:0}
-.anda-entry-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;background:#e1f4eb;color:#12634f;font-size:24px;flex-shrink:0}
-.anda-entry-text{min-width:0}
-.anda-entry-title{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:850;color:#173b35;letter-spacing:-.02em}
-.anda-model-tag{font:700 11px/1 Consolas,"Microsoft YaHei",monospace;padding:4px 9px;border-radius:99px;background:#dcf4e6;color:#0f6d50;letter-spacing:0}
-.anda-entry-sub{font-size:13px;color:#608074;margin:5px 0 0;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.anda-entry-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
-.anda-entry-arrow{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:#eaf3ee;color:#3e7d69;font-size:18px;font-weight:700;transition:transform .18s,background .18s}
-.anda-entry-card:hover .anda-entry-arrow{transform:translateX(3px);background:#176a56;color:#fff}
+* {
+  box-sizing: border-box;
+}
 
-/* 安大+ 沉浸式全屏抽屉视图 */
-.anda-drawer{position:fixed;inset:0;z-index:900;display:flex;align-items:center;justify-content:center}
-.anda-drawer[hidden]{display:none!important}
-.anda-drawer-backdrop{position:absolute;inset:0;background:#0d262173;backdrop-filter:blur(6px);animation:fadeIn .2s ease-out}
-.anda-drawer-window{position:relative;z-index:1;width:min(940px,calc(100vw - 32px));height:min(860px,calc(100vh - 40px));background:#f6f9f7;border:1px solid #c2dbcf;border-radius:24px;box-shadow:0 30px 100px #0b241e55;display:flex;flex-direction:column;overflow:hidden;animation:popIn .25s cubic-bezier(.16,1,.3,1)}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes popIn{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
 
-/* 抽屉顶部 Bar */
-.anda-topbar{height:66px;padding:0 24px;background:#fff;border-bottom:1px solid #dbe8e1;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-shrink:0}
-.anda-topbar-title{margin:0;font-size:17px;font-weight:800;color:#173b35;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
-.anda-topbar-title span{font:700 13px Consolas,"Microsoft YaHei",monospace;color:#188168;background:#e5f6ee;padding:3px 9px;border-radius:99px}
-.anda-topbar-btn{width:40px;height:40px;border-radius:12px;border:1px solid transparent;background:none;color:#4f7365;font-size:20px;display:grid;place-items:center;transition:background .15s,color .15s,border-color .15s}
-.anda-topbar-btn:hover{background:#edf6f1;color:#173b35;border-color:#cfe2d8}
-.anda-topbar-actions{display:flex;gap:8px}
+button,
+input,
+select {
+  font: inherit;
+}
 
-/* 对话主视图 */
-.anda-view{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
-.anda-view[hidden]{display:none!important}
-.anda-chat-body{flex:1;overflow-y:auto;padding:28px 32px;display:flex;flex-direction:column;gap:20px}
+button {
+  cursor: pointer;
+}
 
-/* 欢迎空态（安大+ 图 2 复刻） */
-.anda-welcome-screen{margin:auto 0;padding:20px 0}
-.anda-welcome-head h3{font-size:32px;font-weight:850;color:#173b35;margin:0 0 8px;letter-spacing:-.04em}
-.anda-welcome-head p{font-size:14px;color:#67897c;margin:0 0 28px;line-height:1.6}
-.anda-suggest-grid{display:grid;grid-template-columns:1fr;gap:12px;max-width:760px}
-.anda-suggest-card{width:100%;background:#fff;border:1px solid #d4e5dc;border-radius:16px;padding:17px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:14px;font-weight:700;color:#1f4f43;text-align:left;box-shadow:0 4px 16px #134d3509;transition:all .18s ease}
-.anda-suggest-card:hover{transform:translateY(-2px);background:#fbfefc;border-color:#176a56;box-shadow:0 8px 24px #176a5615;color:#125b48}
-.anda-suggest-arrow{color:#94b3a6;font-size:17px;font-weight:800;transition:transform .15s,color .15s}
-.anda-suggest-card:hover .anda-suggest-arrow{transform:translateX(3px);color:#176a56}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
 
-/* 消息流 */
-.anda-messages-list{display:flex;flex-direction:column;gap:20px}
-.anda-msg{display:flex;flex-direction:column;max-width:88%;animation:fadeIn .2s ease-out}
-.anda-msg-user{align-self:flex-end}
-.anda-msg-user-bubble{background:#176a56;color:#fff;border-radius:20px 20px 4px 20px;padding:13px 19px;font-size:14px;line-height:1.6;font-weight:600;box-shadow:0 6px 18px #176a5628;overflow-wrap:anywhere}
-.anda-msg-ai{align-self:flex-start}
-.anda-msg-ai-card{background:#fff;border:1px solid #d3e5dc;border-radius:20px 20px 20px 4px;padding:20px 24px;box-shadow:0 6px 24px #174d350c;color:#173b35}
-.anda-msg-ai-card p{margin:10px 0 0;font-size:14px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
-.anda-msg-ai-card p:first-child{margin-top:0}
-.anda-evidence-box{margin-top:16px;padding-top:14px;border-top:1px dashed #d5e6de;display:grid;gap:9px}
-.anda-evidence-row{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
-.anda-evidence-label{font-size:11px;font-weight:800;color:#608576;padding-top:3px;min-width:54px}
-.anda-evidence-tags{display:flex;flex-wrap:wrap;gap:6px;flex:1}
-.anda-tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;background:#f2f7f4;border:1px solid #d0e3d9;font:11px/1.4 Consolas,"Microsoft YaHei",monospace;color:#1c5e4c}
-.anda-tag-seq{background:#dcf4e6;border-color:#9dd7b8;color:#0b664b;font-weight:700}
-.anda-boundary-text{font-size:11px;color:#64897a;line-height:1.6}
-.anda-msg-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;font:11px/1.4 Consolas,"Microsoft YaHei",monospace;color:#85a395}
+.sr-only-select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
-/* 底部吸底输入栏（安大+ 图 2 复刻） */
-.anda-chat-footer{padding:16px 24px 20px;background:#fff;border-top:1px solid #dbe8e1;flex-shrink:0}
-.anda-input-bar{display:flex;align-items:center;gap:10px;background:#f3f7f5;border:1px solid #c9ded3;border-radius:99px;padding:6px 8px 6px 20px;box-shadow:inset 0 2px 6px #00000006;transition:border-color .15s,box-shadow .15s}
-.anda-input-bar:focus-within{border-color:#176a56;background:#fff;box-shadow:0 0 0 3px #176a5618}
-.anda-input-bar input{flex:1;border:0;background:none;outline:none;font-size:14px;color:#173b35;padding:8px 0}
-.anda-input-bar input::placeholder{color:#8da59a}
-.anda-send-btn{border:0;border-radius:99px;background:#176a56;color:#fff;padding:10px 22px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:7px;transition:background .15s,transform .15s;flex-shrink:0}
-.anda-send-btn:hover:not(:disabled){background:#0f5544;transform:translateY(-1px)}
-.anda-send-btn:disabled{opacity:.55;cursor:not-allowed}
-.anda-send-arrow{font-size:13px}
+.page-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
 
-/* 模型配置视图（安大+ 图 3 & 图 4 复刻） */
-.anda-config-body{flex:1;overflow-y:auto;padding:28px 32px;display:flex;flex-direction:column;gap:22px}
-.anda-config-section{display:flex;flex-direction:column;gap:10px}
-.anda-config-label{font-size:13px;font-weight:800;color:#507667}
-.anda-platform-tabs{display:flex;flex-wrap:wrap;gap:8px}
-.anda-tab-pill{border:1px solid #cfe0d7;background:#fff;color:#27594b;border-radius:99px;padding:9px 18px;font-size:13px;font-weight:750;transition:all .15s;box-shadow:0 2px 6px #154e3608}
-.anda-tab-pill:hover{background:#edf6f1;border-color:#b5d5c5}
-.anda-tab-pill.active{background:#176a56;color:#fff;border-color:#176a56;box-shadow:0 4px 14px #176a5630}
+/* 顶部紧凑导航栏 */
+.topbar {
+  min-height: 64px;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #d5e4dc;
+}
 
-.anda-config-card{background:#fff;border:1px solid #d4e5dc;border-radius:20px;padding:24px 26px;box-shadow:0 6px 24px #144e370a;display:grid;gap:18px}
-.anda-card-head{display:flex;align-items:start;justify-content:space-between;gap:14px;border-bottom:1px solid #e7efe9;padding-bottom:14px}
-.anda-card-head h3{margin:0 0 4px;font-size:18px;font-weight:850;color:#173b35}
-.anda-card-desc{margin:0;font-size:12px;color:#6d8e81}
-.anda-status-tag{font:700 11px/1 Consolas,"Microsoft YaHei",monospace;padding:5px 11px;border-radius:99px;background:#dcf4e6;color:#0b6a4f;white-space:nowrap}
-.anda-field-group{display:grid;gap:6px}
-.anda-field-group label{font-size:12px;font-weight:800;color:#4c7061}
-.anda-field-head{display:flex;justify-content:space-between;align-items:center}
-.anda-key-badge{font-size:11px;color:#127355;font-weight:700}
-.anda-field-group input{border:1px solid #cedfd5;background:#f8fbf9;border-radius:11px;padding:11px 14px;font-size:13px;color:#173b35;font-family:Consolas,"Segoe UI",sans-serif}
-.anda-key-input-box{display:flex;align-items:center;gap:8px}
-.anda-key-input-box input{flex:1}
-.anda-btn-ghost{border:1px solid #cedfd5;background:#fff;border-radius:11px;padding:10px 14px;font-size:16px;color:#55786a;transition:background .15s}
-.anda-btn-ghost:hover{background:#eef6f2}
-.anda-model-picker{position:relative}
-.anda-model-hint{position:absolute;right:12px;top:50%;transform:translateY(-50%);font:700 11px Consolas,sans-serif;color:#157558;background:#dff5e9;padding:3px 8px;border-radius:6px}
-.anda-config-actions{display:flex;gap:12px;margin-top:8px}
-.anda-btn-outline{flex:1;border:1px solid #176a56;background:#fff;color:#176a56;border-radius:12px;padding:13px 18px;font-size:13.5px;font-weight:800;transition:all .15s}
-.anda-btn-outline:hover{background:#ebf7f1}
-.anda-btn-primary{flex:1.4;border:0;background:#176a56;color:#fff;border-radius:12px;padding:13px 20px;font-size:13.5px;font-weight:800;transition:all .15s;box-shadow:0 6px 18px #176a5624}
-.anda-btn-primary:hover{background:#0e5846}
-.anda-test-status{padding:12px 16px;border-radius:12px;background:#eef6f2;border:1px solid #cae2d6;font-size:12.5px;color:#145f4c;line-height:1.6}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
 
-.anda-readme-card{background:#f3f7f5;border:1px solid #dce8e1;border-radius:18px;padding:20px 24px;color:#5a7d70;font-size:12px;line-height:1.75}
-.anda-readme-card h4{margin:0 0 8px;font-size:13px;font-weight:800;color:#205245}
-.anda-readme-card p{margin:4px 0}
-.anda-readme-card code{font-family:Consolas,monospace;background:#e5f0e9;padding:2px 6px;border-radius:4px;color:#135d49}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.1em;
+  flex-shrink: 0;
+}
 
-@media(max-width:1050px){.readings{grid-template-columns:repeat(2,minmax(0,1fr))}.intro{grid-template-columns:1fr 300px}.flow{gap:10px}.flow-title{width:100%}}
-@media(max-width:700px){.page-shell{padding:0 16px}.topbar{height:68px}.edition{display:none}.intro{display:block;padding:42px 0 32px}.intro h1{font-size:46px}.intro-copy{font-size:13px}.connection-card{margin-top:28px}.flow{gap:9px;padding:15px}.flow-title{width:100%;margin:0}.flow-step{font-size:10px}.flow-step small{font-size:9px}.flow-arrow{font-size:14px}.receipt{display:grid;gap:6px;padding:14px}.receipt small{margin:0}.section-heading{margin:40px 0 16px;align-items:start}.section-heading h2{font-size:23px}.freshness{max-width:115px}.readings{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.reading{min-height:145px;padding:15px}.reading-value{margin:22px 0 8px}.reading-value strong{font-size:34px}.lower-grid{grid-template-columns:1fr;gap:10px}.panel{min-height:210px;padding:20px}.history-list{grid-template-columns:1fr}.anda-entry-card{flex-direction:column;align-items:flex-start}.anda-entry-right{width:100%;justify-content:space-between}.anda-drawer-window{width:100vw;height:100vh;border-radius:0;border:0}.anda-chat-body,.anda-config-body{padding:18px}.anda-welcome-head h3{font-size:26px}.anda-msg{max-width:96%}.anda-config-actions{flex-direction:column}footer{font-size:10px}}
-@media(prefers-reduced-motion:no-preference){.pill-live:before{animation:signal 2s infinite}@keyframes signal{50%{opacity:.25}}}
-.control-panel{margin-top:20px}
-.ctrl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin:14px 0}
-.ctrl-card{border:1px solid rgba(18,52,44,.12);border-radius:14px;padding:14px;background:rgba(255,255,255,.55)}
-.ctrl-card h3{margin:0 0 10px;font-size:.95rem;color:var(--ink)}
-.ctrl-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px;font-size:.9rem}
-.ctrl-row select,.ctrl-row input{padding:6px 10px;border:1px solid rgba(18,52,44,.2);border-radius:8px;background:#fff;font:inherit}
-.ctrl-row input[type=number]{width:68px}
-.ctrl-actions{display:flex;flex-wrap:wrap;gap:8px}
-.ctrl-actions .button:disabled{opacity:.45;cursor:not-allowed}
+.brand-mark span {
+  color: #bfe8c9;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brand-text strong {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.brand-sub {
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.topbar-conn-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 6px;
+  border-radius: 99px;
+  border: 1px solid #cfe0d7;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.topbar-conn-btn:hover {
+  border-color: var(--brand);
+  box-shadow: 0 2px 8px rgba(17, 94, 75, 0.1);
+}
+
+.topbar-conn-label {
+  color: var(--ink-2);
+}
+
+.topbar-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 99px;
+  border: 1px solid #cfe0d7;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.topbar-icon-btn:hover {
+  background: var(--surface-soft);
+  border-color: var(--brand);
+  color: var(--ink);
+}
+
+.edition,
+.eyebrow,
+.panel-kicker {
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
+}
+
+.edition {
+  padding: 7px 12px;
+  border-radius: 99px;
+  background: #e1ece6;
+  color: var(--ink-2);
+}
+
+/* 状态胶囊 */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 99px;
+  padding: 5px 11px;
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.pill:before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.pill-idle {
+  color: var(--ink-2);
+  background: #e5eee9;
+}
+
+.pill-live {
+  color: #0b5e44;
+  background: #d4f0e2;
+}
+
+.pill-warn {
+  color: #854f09;
+  background: #fdeac9;
+}
+
+.pill-error {
+  color: #962f2a;
+  background: #fadfd9;
+}
+
+/* 主体容器 */
+.dashboard-main {
+  padding: 20px 0 36px;
+}
+
+/* 紧凑状态条 */
+.status-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.status-strip-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.status-strip h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.receipt-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  font-size: 13px;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.receipt-label {
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+
+.receipt-inline strong {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.receipt-time {
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.status-strip-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.freshness-time {
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/* 6 项核心遥测卡片网格（无厚重边框，使用柔阴影与留白分组） */
+.readings {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reading {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 144px;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.reading:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+
+.reading-people {
+  box-shadow: inset 4px 0 0 var(--brand), var(--shadow-card);
+}
+
+.reading-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.reading-badge {
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  background: #edf4f0;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.reading-top .pill {
+  padding: 3px 8px;
+}
+
+.reading-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 16px 0 10px;
+}
+
+.reading-value strong {
+  font-family: Consolas, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(26px, 2.2vw, 34px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.reading-unit {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.reading-meta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+/* 主工作区两栏布局 */
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+  align-items: start;
+}
+
+.workspace-main,
+.workspace-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.surface-panel {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  box-shadow: var(--shadow-card);
+  min-width: 0;
+}
+
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.panel-head h2 {
+  margin: 3px 0 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.panel-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+/* 分段切换标签 */
+.segmented-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #edf3ef;
+}
+
+.seg-tab {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  padding: 6px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.seg-tab:hover {
+  color: var(--ink);
+}
+
+.seg-tab.active {
+  background: var(--surface);
+  color: var(--brand);
+  box-shadow: 0 1px 4px rgba(17, 94, 75, 0.12);
+}
+
+.tab-badge {
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+
+.seg-tab.active .tab-badge {
+  color: var(--brand);
+}
+
+/* 趋势图区域 */
+.trend-chart-wrap {
+  position: relative;
+  margin-top: 14px;
+  height: 185px;
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  padding: 12px;
+  overflow: hidden;
+}
+
+.trend-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.trend-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.trend-empty[hidden] {
+  display: none;
+}
+
+.trend-summary {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+/* 统一无边框流水列表 */
+.log-pane {
+  margin-top: 14px;
+}
+
+.log-pane[hidden] {
+  display: none;
+}
+
+.clean-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 290px;
+  overflow-y: auto;
+}
+
+.clean-list li {
+  border-top: 1px solid var(--divider);
+  padding: 10px 4px;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.clean-list li:first-child {
+  border-top: 0;
+}
+
+.clean-list time {
+  font-family: Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.clean-list strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.clean-list code {
+  display: block;
+  margin-top: 2px;
+  font-family: Consolas, "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.history-clean-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.clean-list .empty-message {
+  display: block;
+  padding: 16px 4px;
+  color: var(--ink-muted);
+}
+
+/* 硬件控制中心 */
+.ctrl-section {
+  margin-top: 14px;
+}
+
+.ctrl-section-head h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.ctrl-divider {
+  height: 1px;
+  background: var(--divider);
+  margin: 16px 0;
+}
+
+.ctrl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ctrl-field-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ctrl-field label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.fan-pills,
+.led-pills {
+  display: grid;
+  gap: 6px;
+}
+
+.fan-pills {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.led-pills {
+  grid-template-columns: repeat(2, 64px);
+}
+
+.fan-pill,
+.led-pill {
+  height: 36px;
+  border-radius: 9px;
+  border: 1px solid #cddfd6;
+  background: var(--surface-soft);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.14s ease;
+}
+
+.fan-pill:hover,
+.led-pill:hover {
+  border-color: var(--brand);
+  color: var(--ink);
+}
+
+.fan-pill.active,
+.led-pill.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(17, 94, 75, 0.22);
+}
+
+.temp-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-soft);
+  border: 1px solid #cddfd6;
+  border-radius: 10px;
+  padding: 3px 6px;
+}
+
+.stepper-btn {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.stepper-btn:hover {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.temp-stepper input {
+  width: 48px;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-family: Consolas, "Segoe UI", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  outline: none;
+}
+
+.stepper-unit {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  padding-right: 4px;
+}
+
+.ctrl-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.button-primary {
+  background: var(--brand);
+  color: #fff;
+  flex: 1.3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.button-primary:hover:not(:disabled) {
+  background: var(--brand-hover);
+}
+
+.button-secondary {
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1px solid #c6dad0;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.button-secondary:hover:not(:disabled) {
+  background: var(--surface-soft);
+  border-color: var(--brand);
+  color: var(--ink);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.button-full {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.ctrl-receipt {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+/* AI 助手入口卡片（修复移动端溢出） */
+.anda-entry-section {
+  margin: 0;
+}
+
+.anda-entry-card {
+  width: 100%;
+  border: 0;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  text-align: left;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.anda-entry-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+.anda-entry-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+}
+
+.anda-entry-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.anda-entry-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.anda-entry-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  flex-wrap: wrap;
+}
+
+.anda-model-tag {
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.anda-entry-sub {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin: 4px 0 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.anda-entry-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.anda-entry-arrow {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #eaf3ee;
+  color: var(--brand);
+  font-size: 16px;
+  font-weight: 700;
+  transition: transform 0.16s, background 0.16s, color 0.16s;
+}
+
+.anda-entry-card:hover .anda-entry-arrow {
+  transform: translateX(2px);
+  background: var(--brand);
+  color: #fff;
+}
+
+/* 页脚 */
+.site-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid #d5e4dc;
+  padding: 18px 0 28px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 弹窗（连接设置 & 系统链路说明） */
+.settings-dialog {
+  border: 1px solid #c2d7cc;
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 0;
+  width: min(520px, calc(100vw - 24px));
+  box-shadow: 0 24px 80px rgba(13, 42, 35, 0.35);
+  color: var(--ink);
+}
+
+.settings-dialog::backdrop {
+  background: rgba(13, 38, 33, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+.settings-dialog form,
+.info-dialog-inner {
+  padding: 24px;
+}
+
+.dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.dialog-head h2 {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.close-button {
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font-size: 26px;
+  line-height: 1;
+  padding: 4px 8px;
+}
+
+.dialog-copy {
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.65;
+  margin: 14px 0;
+}
+
+.settings-dialog label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 12px 0;
+  color: var(--ink-2);
+}
+
+.settings-dialog label small {
+  color: var(--ink-muted);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.settings-dialog input {
+  display: block;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid #c7dad0;
+  border-radius: 9px;
+  background: #fff;
+  width: 100%;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.form-message {
+  min-height: 18px;
+  font-size: 13px;
+  color: #9e322d;
+}
+
+.connection-summary-box {
+  background: var(--surface-soft);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.connection-summary-head strong {
+  font-size: 14px;
+}
+
+.connection-detail {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.connection-summary-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.flow {
+  background: #e3efe9;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.flow-title {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-2);
+  margin-bottom: 10px;
+}
+
+.flow-steps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.flow-step {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.flow-step small {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+.flow-arrow {
+  color: var(--brand);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.data-note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--ink-muted);
+}
+
+/* AI 助手全屏抽屉视图 */
+.anda-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.anda-drawer[hidden] {
+  display: none !important;
+}
+
+.anda-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 38, 33, 0.45);
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.anda-drawer-window {
+  position: relative;
+  z-index: 1;
+  width: min(940px, calc(100vw - 32px));
+  height: min(860px, calc(100vh - 40px));
+  background: #f6f9f7;
+  border: 1px solid #c2dbcf;
+  border-radius: 22px;
+  box-shadow: 0 30px 100px rgba(11, 36, 30, 0.33);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.97) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.anda-topbar {
+  height: 64px;
+  padding: 0 22px;
+  background: #fff;
+  border-bottom: 1px solid #dbe8e1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.anda-topbar-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.anda-topbar-title span {
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--brand);
+  background: var(--brand-soft);
+  padding: 3px 9px;
+  border-radius: 99px;
+}
+
+.anda-topbar-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--ink-2);
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+}
+
+.anda-topbar-btn:hover {
+  background: #edf6f1;
+  color: var(--ink);
+  border-color: #cfe2d8;
+}
+
+.anda-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.anda-view[hidden] {
+  display: none !important;
+}
+
+.anda-chat-body,
+.anda-config-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.anda-welcome-screen {
+  margin: auto 0;
+  padding: 16px 0;
+}
+
+.anda-welcome-head h3 {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.anda-welcome-head p {
+  font-size: 14px;
+  color: var(--ink-muted);
+  margin: 0 0 22px;
+  line-height: 1.6;
+}
+
+.anda-suggest-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  max-width: 760px;
+}
+
+.anda-suggest-card {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #d4e5dc;
+  border-radius: 14px;
+  padding: 15px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+  transition: all 0.16s ease;
+}
+
+.anda-suggest-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.anda-suggest-arrow {
+  color: var(--ink-muted);
+  font-size: 16px;
+}
+
+.anda-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.anda-msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 88%;
+}
+
+.anda-msg-user {
+  align-self: flex-end;
+}
+
+.anda-msg-user-bubble {
+  background: var(--brand);
+  color: #fff;
+  border-radius: 18px 18px 4px 18px;
+  padding: 12px 18px;
+  font-size: 14px;
+  line-height: 1.6;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.anda-msg-ai {
+  align-self: flex-start;
+}
+
+.anda-msg-ai-card {
+  background: #fff;
+  border: 1px solid #d3e5dc;
+  border-radius: 18px 18px 18px 4px;
+  padding: 18px 22px;
+  color: var(--ink);
+}
+
+.anda-msg-ai-card p {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.anda-msg-ai-card p:first-child {
+  margin-top: 0;
+}
+
+.anda-evidence-box {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed #d5e6de;
+  display: grid;
+  gap: 8px;
+}
+
+.anda-evidence-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.anda-evidence-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-muted);
+  min-width: 54px;
+}
+
+.anda-evidence-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.anda-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: #f2f7f4;
+  border: 1px solid #d0e3d9;
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.anda-tag-seq {
+  background: #dcf4e6;
+  border-color: #9dd7b8;
+  color: #0b664b;
+  font-weight: 700;
+}
+
+.anda-boundary-text,
+.anda-msg-meta {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.anda-msg-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.anda-chat-footer {
+  padding: 14px 22px 18px;
+  background: #fff;
+  border-top: 1px solid #dbe8e1;
+  flex-shrink: 0;
+}
+
+.anda-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f3f7f5;
+  border: 1px solid #c9ded3;
+  border-radius: 99px;
+  padding: 6px 8px 6px 18px;
+}
+
+.anda-input-bar:focus-within {
+  border-color: var(--brand);
+  background: #fff;
+}
+
+.anda-input-bar input {
+  flex: 1;
+  border: 0;
+  background: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--ink);
+  padding: 7px 0;
+}
+
+.anda-input-bar input::placeholder {
+  color: var(--ink-muted);
+}
+
+.anda-send-btn {
+  border: 0;
+  border-radius: 99px;
+  background: var(--brand);
+  color: #fff;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.anda-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.anda-config-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+
+.anda-platform-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.anda-tab-pill {
+  border: 1px solid #cfe0d7;
+  background: #fff;
+  color: var(--ink-2);
+  border-radius: 99px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.anda-tab-pill.active {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+.anda-config-card {
+  background: #fff;
+  border: 1px solid #d4e5dc;
+  border-radius: 18px;
+  padding: 20px 22px;
+  display: grid;
+  gap: 16px;
+}
+
+.anda-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid #e7efe9;
+  padding-bottom: 12px;
+}
+
+.anda-card-head h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.anda-card-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.anda-status-tag {
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 99px;
+  background: #dcf4e6;
+  color: #0b6a4f;
+  white-space: nowrap;
+}
+
+.anda-field-group {
+  display: grid;
+  gap: 6px;
+}
+
+.anda-field-group label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.anda-field-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.anda-key-badge {
+  font-size: 12px;
+  color: #0b6a4f;
+  font-weight: 700;
+}
+
+.anda-field-group input {
+  border: 1px solid #cedfd5;
+  background: #f8fbf9;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--ink);
+  font-family: Consolas, "Segoe UI", sans-serif;
+}
+
+.anda-key-input-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.anda-key-input-box input {
+  flex: 1;
+}
+
+.anda-btn-ghost {
+  border: 1px solid #cedfd5;
+  background: #fff;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 15px;
+  color: var(--ink-2);
+}
+
+.anda-model-picker {
+  position: relative;
+}
+
+.anda-model-hint {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: Consolas, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0b6a4f;
+  background: #dff5e9;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.anda-config-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.anda-btn-outline {
+  flex: 1;
+  border: 1px solid var(--brand);
+  background: #fff;
+  color: var(--brand);
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.anda-btn-primary {
+  flex: 1.4;
+  border: 0;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.anda-test-status {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #eef6f2;
+  border: 1px solid #cae2d6;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.anda-readme-card {
+  background: #f3f7f5;
+  border: 1px solid #dce8e1;
+  border-radius: 16px;
+  padding: 18px 20px;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.anda-readme-card h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.anda-readme-card p {
+  margin: 4px 0;
+}
+
+.anda-readme-card code {
+  font-family: Consolas, monospace;
+  background: #e5f0e9;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* 响应式断点 */
+@media (max-width: 1180px) {
+  .readings {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-shell {
+    padding: 0 14px;
+  }
+  .topbar {
+    gap: 10px;
+  }
+  .topbar-actions {
+    flex-wrap: nowrap;
+    flex-shrink: 0;
+    gap: 6px;
+  }
+  .topbar-conn-btn {
+    padding: 4px;
+  }
+  .topbar-icon-btn {
+    padding: 7px 10px;
+  }
+  .edition,
+  .topbar-conn-label,
+  .topbar-btn-text {
+    display: none;
+  }
+  .readings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .reading {
+    padding: 14px;
+    min-height: 128px;
+  }
+  .reading-value strong {
+    font-size: 28px;
+  }
+  .surface-panel {
+    padding: 16px;
+  }
+  .anda-entry-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .anda-entry-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .anda-drawer-window {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    border: 0;
+  }
+  .anda-chat-body,
+  .anda-config-body {
+    padding: 16px;
+  }
+  .anda-msg {
+    max-width: 96%;
+  }
+  .anda-config-actions {
+    flex-direction: column;
+  }
+  /* 防止 iOS 移动端输入框自动放大 */
+  input,
+  select,
+  .temp-stepper input {
+    font-size: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pill-live:before {
+    animation: signal 2s infinite;
+  }
+  @keyframes signal {
+    50% { opacity: 0.3; }
+  }
+}
