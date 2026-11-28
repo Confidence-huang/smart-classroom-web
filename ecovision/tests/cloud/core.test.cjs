@@ -185,3 +185,27 @@ test('demo AC commands require capability and match the module acknowledgement',
   assert.equal(send('telemetry', { ...capable, seq: 3, mode: 'LOCAL_OFF', fan_out: 0, fan_level: 0, led_out: 0 }), true);
   assert.throws(() => command({ ac_temp_c: 26 }), /CONTROL_DISABLED/);
 });
+
+test('v1.3.0 AC telemetry and COOL/HEAT mode commands validate and match ACK', () => {
+  const { c, command, send, telemetry } = setup();
+  const capable13 = {
+    ...telemetry, v: '1.3.0', seq: 2, fan_out: 1, fan_level: 2,
+    ac_on: true, ac_temp_c: 26, ac_mode: 'COOL'
+  };
+  assert.equal(send('telemetry', capable13), true);
+  assert.equal(c.view().devices[0].ac_control_available, true);
+  assert.equal(c.view().devices[0].ac_mode_available, true);
+
+  const heatCmd = command({ ac_mode: 'HEAT' });
+  assert.equal(heatCmd.v, '1.3.0');
+  assert.equal(heatCmd.ac_mode, 'HEAT');
+  assert.equal(heatCmd.ac_temp_c, undefined);
+  const heatReply = {
+    v: '1.3.0', device_id: heatCmd.device_id, cmd_id: heatCmd.cmd_id,
+    boot_id: heatCmd.boot_id, control_epoch: heatCmd.control_epoch,
+    status: 'AC_ACCEPTED', reason: 'OK', received_at: 1000, uptime_ms: 1, ac_mode: 'HEAT'
+  };
+  assert.equal(send('ack', { ...heatReply, ac_mode: 'COOL' }), false);
+  assert.equal(send('ack', heatReply), true);
+  assert.equal(c.view().commands[0].state, 'AC_ACCEPTED');
+});
