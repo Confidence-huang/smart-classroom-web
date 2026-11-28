@@ -85,6 +85,10 @@
                 </div>
                 <span id="last-updated" class="freshness-time">暂无采集时间</span>
               </div>
+              <div class="eco-diagnosis-bar" aria-live="polite">
+                <span id="eco-status-pill" class="pill pill-idle">节能策略待机</span>
+                <span id="eco-status-detail" class="eco-status-detail">接入实时遥测后自动评估空场待机与自然光状态。</span>
+              </div>
             </div>
 
             <div class="hero-visual" aria-hidden="true">
@@ -274,11 +278,12 @@
                   </select>
                 </div>
 
-                <div class="ctrl-actions">
-                  <button id="ctrl-apply-btn" class="button button-primary" type="button" disabled>应用手动设置</button>
-                  <button id="ctrl-auto-btn" class="button button-secondary" type="button" disabled>恢复自动</button>
-                </div>
+              <div class="ctrl-actions">
+                <button id="ctrl-apply-btn" class="button button-primary" type="button" disabled>应用手动设置</button>
+                <button id="ctrl-auto-btn" class="button button-secondary" type="button" disabled>恢复自动</button>
               </div>
+              <button id="ctrl-eco-off-btn" class="button button-eco-quick" type="button" disabled>一键离场节能（关风灭灯）</button>
+            </div>
 
               <div class="ctrl-divider" aria-hidden="true"></div>
 

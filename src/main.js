@@ -6,6 +6,7 @@
 import mqtt from 'mqtt'              // 浏览器经 WSS 使用 MQTT，不依赖电脑串口。
 import { publicApiBase } from './public-api.js' // 使用部署配置选择只读 API。
 import { newerTelemetryTimestamp } from './telemetry-time.js' // 两个接收入口使用同一时间校验。
+import { evaluateEcoStatus, summarizeEcoHistory } from './eco-diagnostics.js' // 纯前端节能策略诊断。
 import './style.css'                 // 看板在电脑和手机上共用同一套布局。
 
 // --- 页面数据 ---
@@ -658,6 +659,7 @@ const ctrlEls = {
   led: document.getElementById('ctrl-led-out'),
   applyBtn: document.getElementById('ctrl-apply-btn'),
   autoBtn: document.getElementById('ctrl-auto-btn'),
+  ecoOffBtn: document.getElementById('ctrl-eco-off-btn'),
   acTemp: document.getElementById('ctrl-ac-temp'),
   acOnBtn: document.getElementById('ctrl-ac-on-btn'),
   acOffBtn: document.getElementById('ctrl-ac-off-btn'),
@@ -674,6 +676,8 @@ function renderControlPanel(view) {
     ctrlEls.pill.className = 'pill pill-idle'
     ctrlEls.status.textContent = '控制服务已连接，等待设备上线遥测。'
     ctrlEls.applyBtn.disabled = ctrlEls.autoBtn.disabled = ctrlEls.acOnBtn.disabled = ctrlEls.acOffBtn.disabled = true
+    if (ctrlEls.ecoOffBtn) ctrlEls.ecoOffBtn.disabled = true
+    refreshEcoDiagnostics()
     return
   }
   const t = dev.telemetry || {}
@@ -682,9 +686,11 @@ function renderControlPanel(view) {
   ctrlEls.pill.className = `pill ${online ? 'pill-live' : 'pill-warn'}`
   ctrlEls.status.textContent = `${dev.device_id} · 模式 ${t.mode || '—'} · 风扇 ${t.fan_out ? (t.fan_level ?? 1) + ' 档' : '关闭'} · 灯环 ${t.led_out ? '亮' : '灭'}`
   ctrlEls.applyBtn.disabled = ctrlEls.autoBtn.disabled = ctrlState.busy || !online
+  if (ctrlEls.ecoOffBtn) ctrlEls.ecoOffBtn.disabled = ctrlState.busy || !online
   const acReady = Boolean(dev.ac_control_available)
   ctrlEls.acOnBtn.disabled = ctrlEls.acOffBtn.disabled = ctrlState.busy || !online || !acReady
   if (!acReady && online) ctrlEls.status.textContent += '（当前固件未上报模拟空调能力）'
+  refreshEcoDiagnostics()
 
   // 当通过同源 ECS 控制服务访问时，把最新遥测同步到顶部实时卡片
   if (t.seq != null && (ecsSite || !publicApiMode)) {
@@ -923,13 +929,39 @@ function renderTrendChart() {
   svg.replaceChildren(defs, area, line, dot)
 
   const avg = (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1)
-  summaryEl.textContent = `${meta.label} · 样本 ${points.length} 条 · 最低 ${minVal}${meta.unit} · 最高 ${maxVal}${meta.unit} · 均值 ${avg}${meta.unit}`
+  const ecoSum = summarizeEcoHistory(trendState.samples)
+  const ecoText = ecoSum
+    ? ` ｜ 无人待机 ${ecoSum.unoccupiedCount}/${ecoSum.total} 条 · 自然光达标(≥300lx) ${ecoSum.daylightCount}/${ecoSum.total} 条`
+    : ''
+  summaryEl.textContent = `${meta.label} · 样本 ${points.length} 条 · 最低 ${minVal}${meta.unit} · 最高 ${maxVal}${meta.unit} · 均值 ${avg}${meta.unit}${ecoText}`
 }
+
+function refreshEcoDiagnostics(latestTelemetry = null) {
+  const pill = document.getElementById('eco-status-pill')
+  const detail = document.getElementById('eco-status-detail')
+  if (!pill || !detail) return
+  if (latestTelemetry) trendState.latestTelemetry = latestTelemetry
+  const res = evaluateEcoStatus({
+    telemetry: trendState.latestTelemetry || trendState.samples[0] || null,
+    controlDevice: ctrlState.device,
+  })
+  pill.textContent = res.label
+  pill.className = `pill pill-${res.tone}`
+  detail.textContent = res.detail
+}
+
+ctrlEls.ecoOffBtn?.addEventListener('click', () => {
+  if (ctrlEls.fan) ctrlEls.fan.value = '0'
+  if (ctrlEls.led) ctrlEls.led.value = '0'
+  syncControlPills()
+  sendControlIntent({ mode: 'REMOTE', fan_out: 0, fan_level: 0, led_out: 0 })
+})
 
 function updateTrendSamples(historyRows) {
   if (!Array.isArray(historyRows)) return
   trendState.samples = historyRows.slice(0, 24)
   renderTrendChart()
+  refreshEcoDiagnostics(trendState.samples[0] || null)
 }
 
 for (const btn of document.querySelectorAll('[data-trend-metric]')) {
